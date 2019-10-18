@@ -106,7 +106,7 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   ;*****
 
   ;***** Beam volume calculation
-  beamxx = read_binary('../CHIPS/chips_plots/beam_area_point_xx_srhz.dat',data_type=4)
+  beamxx = read_binary('beam_area_point_xx_srhz.dat',data_type=4)
   if ~keyword_set(beam_point_weight) then begin
     beam_point_weight = [0.,0.,0.,0.,1.,0.,0.,0.,0.]
   endif
