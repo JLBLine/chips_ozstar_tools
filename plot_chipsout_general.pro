@@ -46,10 +46,11 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   endif else print, "Kriging has not been applied to inputs (Default: kriging applied, lssa_num=0)"
 
   ;Default number of frequencies
-  if ~keyword_set(n_freq) then $
-    if keyword_set(band) then $
-    if (band EQ 'ultra-low') then n_freq = 320 $
-  else n_freq = 384
+  if ~keyword_set(n_freq) then begin
+    if keyword_set(band) then begin
+      if (band EQ 'ultra-low') then n_freq = 320
+    endif else n_freq = 384
+  endif
   print, "Number of frequency channels is " + strtrim(n_freq,2) + " (Default: 384, 320 for ultra-low)"
   Nchan = n_freq
   Nchanall = n_freq
@@ -65,11 +66,11 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   outputstring=output_tag
 
   if keyword_set(FHD) then begin
-    instring1 = 'xx_'+ strtrim(lssa_num,2) +'.iter._' + outputstring
-    instring2 = 'yy_'+ strtrim(lssa_num,2) +'.iter._' + outputstring
+    instring1 = 'xx_'+ strtrim(lssa_num,2) +'.iter.' + outputstring
+    instring2 = 'yy_'+ strtrim(lssa_num,2) +'.iter.' + outputstring
   endif else if keyword_set(RTS) then begin
-    instring1 = 'yy_'+ strtrim(lssa_num,2) +'.iter._' + outputstring
-    instring2 = 'xx_'+ strtrim(lssa_num,2) +'.iter._' + outputstring
+    instring1 = 'yy_'+ strtrim(lssa_num,2) +'.iter.' + outputstring
+    instring2 = 'xx_'+ strtrim(lssa_num,2) +'.iter.' + outputstring
   endif
   print, 'Polarizations are presented in FHD-format (N-S = YY, E-W = XX)'
   ;*****
