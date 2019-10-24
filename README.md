@@ -50,6 +50,15 @@ where `list_test.txt` contains obs ID numbers. `--no_clean` means the clean scri
 
 This is an IDL script to perform the final binning, masking, and normalizations for CHIPS outputs given either FHD or RTS inputs. Diagnostic plots are also made.
 
+Various libraries are required. Please see the the [dependencies](https://github.com/EoRImaging/eppsilon#dependencies) of eppsilon if a local installation is desired. Otherwise, add these paths to your `IDL_PATH` to your environment:
+```
+/fred/oz048/MWA/CODE/CHIPS/PS_libs/coyote
+/fred/oz048/MWA/CODE/CHIPS/PS_libs/fhdps_utils
+/fred/oz048/MWA/CODE/CHIPS/PS_libs/Healpix_3.11
+/fred/oz048/MWA/CODE/CHIPS/PS_libs/pro/astro
+/fred/oz048/MWA/CODE/CHIPS/PS
+```
+
 To run, open up an interactive IDL session   
 ```
 idl
