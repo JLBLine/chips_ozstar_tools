@@ -4,6 +4,7 @@
 
 ;; Inputs:
 ;; output_tag: Enter the output_tag that was used to run CHIPS (Entry required)
+;;   To generate diff PS of something other than E-W and N-S of one run, enter a two element array
 ;; initials: Enter in your initials that were used to create your personal CHIPS_OUT directory (Default: empty)
 ;; FHD, RTS: Specify FHD or RTS inputs with those keywords, set to 1 in case of True.
 ;; oneD, twoD: Specify 1D and 2D plotting mode, set to 1 in case of True.
@@ -15,6 +16,7 @@
 ;; band_point_weight: An array of 9 integers to indicate what pointings, from -4 to 4, were used. Default is just zenith.
 ;    For example, if pointings -2 to 2 were used, then band_point_weight = [0,0,1,1,1,1,1,0,0]
 ;; output_dir: Output directory for plots
+;; input_dir: Optional full-path input directory 
 
 ;; Example call (using defaults):
 ;; idl
@@ -24,7 +26,7 @@
 
 pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD=oneD, twoD=twoD, $
   n_freq=n_freq, band=band, base_freq=base_freq, chan_width=chan_width, lssa_num=lssa_num, $
-  beam_point_weight = beam_point_weight, output_dir=output_dir
+  beam_point_weight = beam_point_weight, output_dir=output_dir, input_dir=input_dir
 
 
   ;Set default timing resolution
@@ -59,20 +61,30 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   ;***** Strings and output file names
   if ~keyword_set(initials) then basename = '/fred/oz048/MWA/CODE/CHIPS/CHIPS_OUT/' $
     else basename = '/fred/oz048/MWA/CODE/CHIPS/' + STRUPCASE(initials) + '_CHIPS_OUT/'
+  if keyword_set(input_dir) then basename = input_dir
   if ~keyword_set(output_dir) then spawn,"echo $HOME",output_dir
   output_dir = output_dir + '/'
   print, "Output plot directory is " + output_dir
 
   outputstring=output_tag
 
-  if keyword_set(FHD) then begin
-    instring1 = 'xx_'+ strtrim(lssa_num,2) +'.iter.' + outputstring
-    instring2 = 'yy_'+ strtrim(lssa_num,2) +'.iter.' + outputstring
-  endif else if keyword_set(RTS) then begin
-    instring1 = 'yy_'+ strtrim(lssa_num,2) +'.iter.' + outputstring
-    instring2 = 'xx_'+ strtrim(lssa_num,2) +'.iter.' + outputstring
-  endif
-  print, 'Polarizations are presented in FHD-format (N-S = YY, E-W = XX)'
+  if N_elements(outputstring) EQ 1 then begin
+    if keyword_set(FHD) then begin
+      instring1 = 'xx_'+ strtrim(lssa_num,2) +'.iter.' + outputstring
+      instring2 = 'yy_'+ strtrim(lssa_num,2) +'.iter.' + outputstring
+    endif else if keyword_set(RTS) then begin
+      instring1 = 'yy_'+ strtrim(lssa_num,2) +'.iter.' + outputstring
+      instring2 = 'xx_'+ strtrim(lssa_num,2) +'.iter.' + outputstring
+    endif
+    print, 'Polarizations are presented in FHD-format (N-S = YY, E-W = XX)'
+  endif else begin
+    instring1 = 'xx_'+ strtrim(lssa_num,2) +'.iter.' + outputstring[0]
+    instring2 = 'xx_'+ strtrim(lssa_num,2) +'.iter.' + outputstring[1]
+    if strmatch(outputstring[0],'*xx*') or strmatch(outputstring[0],'*yy*') then begin
+      instring1 = outputstring[0]
+      instring2 = outputstring[1]
+    endif
+  endelse
   ;*****
 
   ;***** General obs/integration details
@@ -458,18 +470,29 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
 
   if keyword_set(twoD) then begin
 
+    ;Set up titles based on inputs
+    if N_elements(outputstring) EQ 1 then begin
+      title_pre1 = 'E-W'
+      title_pre2 = 'N-S'
+      note = outputstring
+    endif else begin
+      title_pre1 = 'Input1'
+      title_pre2 = 'Input2'
+      note = outputstring[0] + ', ' + outputstring[1]
+    endelse
+
     struc = {ncol:2,nrow:1,ordering:'col'}
     output = output_dir + 'plots_'+outputstring+'.png'
 
     kpower_2d_plots,kperp_edges=kper[1:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
-      power=(crosspower[1:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix='E-W',$
+      power=(crosspower[1:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre1,$
       start_multi_params=struc,plotfile=output,/png,data_range=[plot_min_2D,plot_max_2D],/baseline_axis,kperp_lambda_conv=conv_factor,$
       /delay_axis,delay_params=delay_params,kperp_plot_range=kperp_plot_range
 
     kpower_2d_plots,kperp_edges=kper[1:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=(crosspower_2[1:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,$
-      multi_pos=[0.5,0.,1.0,1.0],title_prefix='N-S',plotfile=output,/png,data_range=[plot_min_2D,plot_max_2D],/baseline_axis,$
-      kperp_lambda_conv=conv_factor,/delay_axis,delay_params=delay_params,note=outputstring,$
+      multi_pos=[0.5,0.,1.0,1.0],title_prefix=title_pre2,plotfile=output,/png,data_range=[plot_min_2D,plot_max_2D],/baseline_axis,$
+      kperp_lambda_conv=conv_factor,/delay_axis,delay_params=delay_params,note=note,$
       kperp_plot_range=kperp_plot_range
 
     cgps_close, /png, /delete_ps, density = 600
@@ -484,13 +507,13 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
 
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=ratio_cross[2:nbins-10,0:Nchancut/2-1],noise_expval=abs(flagpower[2:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,$
-      wedge_amp=[fov,horizon],window_num=0,full_title='E-W/N-S Ratio',plotfile=output,/png,data_range=[0.1,10.],$
-      start_multi_params=struc,delay_axis,delay_params=delay_params,/no_units,$
+      wedge_amp=[fov,horizon],window_num=0,full_title=title_pre1 + '/' + title_pre2 + ' Ratio',plotfile=output,/png,data_range=[0.1,10.],$
+      start_multi_params=struc,/delay_axis,delay_params=delay_params,/no_units,$
       kperp_plot_range=kperp_plot_range
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
-      power=diff_cross[2:nbins-10,0:Nchancut/2-1],/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,full_title='E-W - N-S Diff',$
+      power=diff_cross[2:nbins-10,0:Nchancut/2-1],/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,full_title=title_pre1 + ' - ' + title_pre2 + ' Diff',$
       plotfile=output,/png,data_range=[-mxdiff,mxdiff],multi_pos=[0.5,0.,1.0,1.0],/delay_axis,$
-      delay_params=delay_params,weights=weights[2:nbins-10,0:Nchancut/2-1],color_profile='sym_log',note=outputstring,$
+      delay_params=delay_params,weights=weights[2:nbins-10,0:Nchancut/2-1],color_profile='sym_log',note=note,$
       kperp_plot_range=kperp_plot_range
 
     cgps_close, /png, /delete_ps, density = 600
@@ -502,32 +525,32 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
     output = output_dir + 'plots_'+outputstring+'_noise.png'
 
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
-      power=crosspower[2:nbins-10,0:Nchancut/2-1],/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix='E-W',$
+      power=crosspower[2:nbins-10,0:Nchancut/2-1],/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre1,$
       /delay_axis,delay_params=delay_params,start_multi_params=struc,weights=weights[2:nbins-10,0:Nchancut/2-1],/plot_sigma,$
       plotfile=output,/png,data_range=[1.e4,1.e13],kperp_plot_range=kperp_plot_range
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=(crosspower[2:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,$
-      noise_expval=abs(flagpower[2:nbins-10,0:Nchancut/2-1]),/plot_exp_noise,title_prefix='E-W',multi_pos=[0.33,0.5,0.67,1],$
+      noise_expval=abs(flagpower[2:nbins-10,0:Nchancut/2-1]),/plot_exp_noise,title_prefix=title_pre1,multi_pos=[0.33,0.5,0.67,1],$
       plotfile=output,/png,data_range=[1.e4,1.e13],/delay_axis,delay_params=delay_params,$
       kperp_plot_range=kperp_plot_range
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
-      power=crosspower[2:nbins-10,0:Nchancut/2-1],/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix='E-W',$
+      power=crosspower[2:nbins-10,0:Nchancut/2-1],/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre1,$
       multi_pos=[0.67,0.5,1.0,1.0],noise_meas=abs(residpower[2:nbins-10,0:Nchancut/2-1]),/plot_noise,plotfile=output,/png,$
       data_range=[1.e4,1.e13],/delay_axis,delay_params=delay_params,kperp_plot_range=kperp_plot_range
 
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
-      power=crosspower_2[2:nbins-10,0:Nchancut/2-1],/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix='N-S',$
+      power=crosspower_2[2:nbins-10,0:Nchancut/2-1],/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre2,$
       multi_pos=[0.,0.,0.33,0.5],weights=weights_2[2:nbins-10,0:Nchancut/2-1],/plot_sigma,plotfile=output,/png,data_range=[1.e4,1.e13],$
       /delay_axis,delay_params=delay_params,kperp_plot_range=kperp_plot_range
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=(crosspower_2[2:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,$
-      noise_expval=abs(flagpower_2[2:nbins-10,0:Nchancut/2-1]),/plot_exp_noise,title_prefix='N-S',multi_pos=[0.33,0.,0.67,0.5],$
+      noise_expval=abs(flagpower_2[2:nbins-10,0:Nchancut/2-1]),/plot_exp_noise,title_prefix=title_pre2,multi_pos=[0.33,0.,0.67,0.5],$
       plotfile=output,/png,data_range=[1.e4,1.e13],/delay_axis,delay_params=delay_params,$
       kperp_plot_range=kperp_plot_range
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
-      power=crosspower_2[2:nbins-10,0:Nchancut/2-1],/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix='N-S',$
+      power=crosspower_2[2:nbins-10,0:Nchancut/2-1],/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre2,$
       multi_pos=[0.67,0.,1.0,0.5],noise_meas=abs(residpower_2[2:nbins-10,0:Nchancut/2-1]),/plot_noise,plotfile=output,/png,$
-      data_range=[1.e4,1.e13],/delay_axis,delay_params=delay_params,note=outputstring,$
+      data_range=[1.e4,1.e13],/delay_axis,delay_params=delay_params,note=note,$
       kperp_plot_range=kperp_plot_range
     cgps_close, /png, /delete_ps, density = 600
 
@@ -537,14 +560,14 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
     err_data_range=[1.e4,1.e13]
 
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
-      power=(crosspower[2:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix='E-W',$
+      power=(crosspower[2:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre1,$
       start_multi_params=struc,plotfile=output,/png,data_range=err_data_range,/baseline_axis,kperp_lambda_conv=conv_factor,/delay_axis,$
       delay_params=delay_params,/plot_sigma,weights=weights[2:nbins-10,0:Nchancut/2-1],kperp_plot_range=kperp_plot_range
 
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=(crosspower_2[2:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,multi_pos=[0.5,0.,1.0,1.0],$
-      title_prefix='N-S',plotfile=output,/png,data_range=err_data_range,/baseline_axis,kperp_lambda_conv=conv_factor,/delay_axis,$
-      delay_params=delay_params,/plot_sigma,weights=weights_2[2:nbins-10,0:Nchancut/2-1],note=outputstring,$
+      title_prefix=title_pre2,plotfile=output,/png,data_range=err_data_range,/baseline_axis,kperp_lambda_conv=conv_factor,/delay_axis,$
+      delay_params=delay_params,/plot_sigma,weights=weights_2[2:nbins-10,0:Nchancut/2-1],note=note,$
       kperp_plot_range=kperp_plot_range
 
     cgps_close, /png, /delete_ps, density = 600
@@ -557,24 +580,24 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=crosspower[2:nbins-10,0:Nchancut/2-1],noise_expval=abs(flagpower[2:nbins-10,0:Nchancut/2-1]),$
       noise_meas=abs(residpower[2:nbins-10,0:Nchancut/2-1]),/nnr,/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,$
-      title_prefix='E-W',plotfile=output,/png,data_range=[0.01,100.],start_multi_params=struc,/delay_axis,$
+      title_prefix=title_pre1,plotfile=output,/png,data_range=[0.01,100.],start_multi_params=struc,/delay_axis,$
       delay_params=delay_params,kperp_plot_range=kperp_plot_range
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=crosspower[2:nbins-10,0:Nchancut/2-1],noise_expval=abs(flagpower[2:nbins-10,0:Nchancut/2-1]),/snr,/plot_wedge_line,$
-      wedge_amp=[fov,horizon],window_num=0,title_prefix='E-W',plotfile=output,/png,data_range=[1.e-2,1.e6],$
+      wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre1,plotfile=output,/png,data_range=[1.e-2,1.e6],$
       multi_pos=[0.,0.,0.5,0.5],/delay_axis,delay_params=delay_params,weights=weights[2:nbins-10,0:Nchancut/2-1],$
-      note=outputstring,kperp_plot_range=kperp_plot_range
+      kperp_plot_range=kperp_plot_range
 
 
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=crosspower_2[2:nbins-10,0:Nchancut/2-1],noise_expval=abs(flagpower_2[2:nbins-10,0:Nchancut/2-1]),/snr,/plot_wedge_line,$
-      wedge_amp=[fov,horizon],window_num=0,title_prefix='N-S',plotfile=output,/png,multi_pos=[0.5,0.,1,0.5],data_range=[1.e-2,1.e6],$
+      wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre2,plotfile=output,/png,multi_pos=[0.5,0.,1,0.5],data_range=[1.e-2,1.e6],$
       /delay_axis,delay_params=delay_params,weights=weights_2[2:nbins-10,0:Nchancut/2-1],kperp_plot_range=kperp_plot_range
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=crosspower_2[2:nbins-10,0:Nchancut/2-1],noise_expval=abs(flagpower_2[2:nbins-10,0:Nchancut/2-1]),$
       noise_meas=abs(residpower_2[2:nbins-10,0:Nchancut/2-1]),/nnr,/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,$
-      title_prefix='N-S',multi_pos=[0.5,0.5,1,1],plotfile=output,/png,data_range=[0.01,100.],/delay_axis,$
-      delay_params=delay_params,kperp_plot_range=kperp_plot_range
+      title_prefix=title_pre2,multi_pos=[0.5,0.5,1,1],plotfile=output,/png,data_range=[0.01,100.],/delay_axis,$
+      delay_params=delay_params,kperp_plot_range=kperp_plot_range,note=note
 
     cgps_close, /png, /delete_ps, density = 600
 
