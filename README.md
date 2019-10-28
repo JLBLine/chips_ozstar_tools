@@ -75,7 +75,7 @@ plot_chipsout_general, 'my_output_tag', initials='NB', RTS=1, twoD=1, n_freq=384
 ```
 
 The keywords are 
-* output_tag: REQUIRED. Enter the output_tag that was used to run CHIPS.   
+* output_tag: REQUIRED. Enter the output_tag that was used to run CHIPS to generate N-S and E-W power spectra. Alternatively, add a string array of two output_tags: `['xx_0.iter.output_tag1', 'xx_0.iter.output_tag2']` to specify pols directly or `['output_tag1', 'output_tag2']` which defaults to the `xx` pols only.
 * initials: Enter in your initials that were used to create your personal CHIPS_OUT directory (Default: empty).   
 * FHD, RTS: Specify FHD or RTS inputs with those keywords, set to 1 in case of True.   
 * oneD, twoD: Specify 1D and 2D plotting mode, set to 1 in case of True.   
@@ -85,5 +85,6 @@ The keywords are
 * lssa_num: Specify whether kriging has been performed on the input (0: kriging applied, 1: kriging not applied, defaults to 0).   
 * band_point_weight: An array of 9 integers to indicate what pointings, from -4 to 4, were used. Default is just zenith. For example, if pointings -2 to 2 were used, then band_point_weight = [0,0,1,1,1,1,1,0,0].   
 * output_dir: Output directory for plots. Defaults to your home directory.
+* input_dir: Input directory. Default is built off of initials and lssa_num inputs
 
 There are various places you can change the code to provide masking (i.e. masking the horizon). If this is required, please inquire, and we will add an interface.
