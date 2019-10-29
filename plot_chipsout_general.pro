@@ -479,6 +479,7 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
       title_pre1 = 'Input1'
       title_pre2 = 'Input2'
       note = outputstring[0] + ', ' + outputstring[1]
+      outputstring = outputstring[0] + '__' + outputstring[1]
     endelse
 
     struc = {ncol:2,nrow:1,ordering:'col'}
