@@ -15,8 +15,9 @@
 ;; lssa_num: Specify whether kriging has been performed on the input (0: kriging applied, 1: kriging not applied, defaults to 0)
 ;; band_point_weight: An array of 9 integers to indicate what pointings, from -4 to 4, were used. Default is just zenith.
 ;    For example, if pointings -2 to 2 were used, then band_point_weight = [0,0,1,1,1,1,1,0,0]
-;; output_dir: Output directory for plots
-;; input_dir: Optional full-path input directory 
+;; output_dir: Optional output directory for plots. Default is home
+;; input_dir: Optional full-path input directory. 
+;; pdf: Set to one to make pdfs instead of pngs
 
 ;; Example call (using defaults):
 ;; idl
@@ -26,7 +27,7 @@
 
 pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD=oneD, twoD=twoD, $
   n_freq=n_freq, band=band, base_freq=base_freq, chan_width=chan_width, lssa_num=lssa_num, $
-  beam_point_weight = beam_point_weight, output_dir=output_dir, input_dir=input_dir
+  beam_point_weight = beam_point_weight, output_dir=output_dir, input_dir=input_dir, pdf=pdf
 
 
   ;Set default timing resolution
@@ -84,6 +85,14 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
       instring1 = outputstring[0]
       instring2 = outputstring[1]
     endif
+  endelse
+
+  if keyword_set(pdf) then begin
+    pdf = 1
+    png = 0
+  endif else begin
+    pdf = 0
+    png = 1
   endelse
   ;*****
 
@@ -483,124 +492,124 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
     endelse
 
     struc = {ncol:2,nrow:1,ordering:'col'}
-    output = output_dir + 'plots_'+outputstring+'.png'
+    output = output_dir + 'plots_'+outputstring
 
     kpower_2d_plots,kperp_edges=kper[1:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=(crosspower[1:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre1,$
-      start_multi_params=struc,plotfile=output,/png,data_range=[plot_min_2D,plot_max_2D],/baseline_axis,kperp_lambda_conv=conv_factor,$
-      /delay_axis,delay_params=delay_params,kperp_plot_range=kperp_plot_range
+      start_multi_params=struc,plotfile=output,data_range=[plot_min_2D,plot_max_2D],/baseline_axis,kperp_lambda_conv=conv_factor,$
+      /delay_axis,delay_params=delay_params,kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
 
     kpower_2d_plots,kperp_edges=kper[1:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=(crosspower_2[1:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,$
-      multi_pos=[0.5,0.,1.0,1.0],title_prefix=title_pre2,plotfile=output,/png,data_range=[plot_min_2D,plot_max_2D],/baseline_axis,$
+      multi_pos=[0.5,0.,1.0,1.0],title_prefix=title_pre2,plotfile=output,data_range=[plot_min_2D,plot_max_2D],/baseline_axis,$
       kperp_lambda_conv=conv_factor,/delay_axis,delay_params=delay_params,note=note,$
-      kperp_plot_range=kperp_plot_range
+      kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
 
-    cgps_close, /png, /delete_ps, density = 600
+    cgps_close, png=png, pdf=pdf, /delete_ps, density = 600
 
     ; ********************************
 
 
     struc = {ncol:2,nrow:1,ordering:'col'}
-    output = output_dir + 'plots_'+outputstring+'_ratiodiff.png'
+    output = output_dir + 'plots_'+outputstring+'_ratiodiff'
 
     mxdiff = max(abs(diff_cross))*10.
 
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=ratio_cross[2:nbins-10,0:Nchancut/2-1],noise_expval=abs(flagpower[2:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,$
-      wedge_amp=[fov,horizon],window_num=0,full_title=title_pre1 + '/' + title_pre2 + ' Ratio',plotfile=output,/png,data_range=[0.1,10.],$
+      wedge_amp=[fov,horizon],window_num=0,full_title=title_pre1 + '/' + title_pre2 + ' Ratio',plotfile=output,data_range=[0.1,10.],$
       start_multi_params=struc,/delay_axis,delay_params=delay_params,/no_units,$
-      kperp_plot_range=kperp_plot_range
+      kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=diff_cross[2:nbins-10,0:Nchancut/2-1],/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,full_title=title_pre1 + ' - ' + title_pre2 + ' Diff',$
-      plotfile=output,/png,data_range=[-mxdiff,mxdiff],multi_pos=[0.5,0.,1.0,1.0],/delay_axis,$
+      plotfile=output,data_range=[-mxdiff,mxdiff],multi_pos=[0.5,0.,1.0,1.0],/delay_axis,$
       delay_params=delay_params,weights=weights[2:nbins-10,0:Nchancut/2-1],color_profile='sym_log',note=note,$
-      kperp_plot_range=kperp_plot_range
+      kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
 
-    cgps_close, /png, /delete_ps, density = 600
+    cgps_close, png=png, pdf=pdf, /delete_ps, density = 600
 
     ; ********************************
 
 
     struc = {ncol:3,nrow:2,ordering:'col'}
-    output = output_dir + 'plots_'+outputstring+'_noise.png'
+    output = output_dir + 'plots_'+outputstring+'_noise'
 
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=crosspower[2:nbins-10,0:Nchancut/2-1],/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre1,$
       /delay_axis,delay_params=delay_params,start_multi_params=struc,weights=weights[2:nbins-10,0:Nchancut/2-1],/plot_sigma,$
-      plotfile=output,/png,data_range=[1.e4,1.e13],kperp_plot_range=kperp_plot_range
+      plotfile=output,data_range=[1.e4,1.e13],kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=(crosspower[2:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,$
       noise_expval=abs(flagpower[2:nbins-10,0:Nchancut/2-1]),/plot_exp_noise,title_prefix=title_pre1,multi_pos=[0.33,0.5,0.67,1],$
-      plotfile=output,/png,data_range=[1.e4,1.e13],/delay_axis,delay_params=delay_params,$
-      kperp_plot_range=kperp_plot_range
+      plotfile=output,data_range=[1.e4,1.e13],/delay_axis,delay_params=delay_params,$
+      kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=crosspower[2:nbins-10,0:Nchancut/2-1],/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre1,$
-      multi_pos=[0.67,0.5,1.0,1.0],noise_meas=abs(residpower[2:nbins-10,0:Nchancut/2-1]),/plot_noise,plotfile=output,/png,$
-      data_range=[1.e4,1.e13],/delay_axis,delay_params=delay_params,kperp_plot_range=kperp_plot_range
+      multi_pos=[0.67,0.5,1.0,1.0],noise_meas=abs(residpower[2:nbins-10,0:Nchancut/2-1]),/plot_noise,plotfile=output,$
+      data_range=[1.e4,1.e13],/delay_axis,delay_params=delay_params,kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
 
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=crosspower_2[2:nbins-10,0:Nchancut/2-1],/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre2,$
-      multi_pos=[0.,0.,0.33,0.5],weights=weights_2[2:nbins-10,0:Nchancut/2-1],/plot_sigma,plotfile=output,/png,data_range=[1.e4,1.e13],$
-      /delay_axis,delay_params=delay_params,kperp_plot_range=kperp_plot_range
+      multi_pos=[0.,0.,0.33,0.5],weights=weights_2[2:nbins-10,0:Nchancut/2-1],/plot_sigma,plotfile=output,data_range=[1.e4,1.e13],$
+      /delay_axis,delay_params=delay_params,kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=(crosspower_2[2:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,$
       noise_expval=abs(flagpower_2[2:nbins-10,0:Nchancut/2-1]),/plot_exp_noise,title_prefix=title_pre2,multi_pos=[0.33,0.,0.67,0.5],$
-      plotfile=output,/png,data_range=[1.e4,1.e13],/delay_axis,delay_params=delay_params,$
-      kperp_plot_range=kperp_plot_range
+      plotfile=output,data_range=[1.e4,1.e13],/delay_axis,delay_params=delay_params,$
+      kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=crosspower_2[2:nbins-10,0:Nchancut/2-1],/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre2,$
-      multi_pos=[0.67,0.,1.0,0.5],noise_meas=abs(residpower_2[2:nbins-10,0:Nchancut/2-1]),/plot_noise,plotfile=output,/png,$
+      multi_pos=[0.67,0.,1.0,0.5],noise_meas=abs(residpower_2[2:nbins-10,0:Nchancut/2-1]),/plot_noise,plotfile=output,$
       data_range=[1.e4,1.e13],/delay_axis,delay_params=delay_params,note=note,$
-      kperp_plot_range=kperp_plot_range
-    cgps_close, /png, /delete_ps, density = 600
+      kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
+    cgps_close, png=png,pdf=pdf, /delete_ps, density = 600
 
     ; ****************************
     struc = {ncol:2,nrow:1,ordering:'col'}
-    output = output_dir + 'plots_'+outputstring+'_errors.png'
+    output = output_dir + 'plots_'+outputstring+'_errors'
     err_data_range=[1.e4,1.e13]
 
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=(crosspower[2:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre1,$
-      start_multi_params=struc,plotfile=output,/png,data_range=err_data_range,/baseline_axis,kperp_lambda_conv=conv_factor,/delay_axis,$
-      delay_params=delay_params,/plot_sigma,weights=weights[2:nbins-10,0:Nchancut/2-1],kperp_plot_range=kperp_plot_range
+      start_multi_params=struc,plotfile=output,data_range=err_data_range,/baseline_axis,kperp_lambda_conv=conv_factor,/delay_axis,$
+      delay_params=delay_params,/plot_sigma,weights=weights[2:nbins-10,0:Nchancut/2-1],kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
 
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=(crosspower_2[2:nbins-10,0:Nchancut/2-1]),/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,multi_pos=[0.5,0.,1.0,1.0],$
-      title_prefix=title_pre2,plotfile=output,/png,data_range=err_data_range,/baseline_axis,kperp_lambda_conv=conv_factor,/delay_axis,$
+      title_prefix=title_pre2,plotfile=output,data_range=err_data_range,/baseline_axis,kperp_lambda_conv=conv_factor,/delay_axis,$
       delay_params=delay_params,/plot_sigma,weights=weights_2[2:nbins-10,0:Nchancut/2-1],note=note,$
-      kperp_plot_range=kperp_plot_range
+      kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
 
-    cgps_close, /png, /delete_ps, density = 600
+    cgps_close, png=png, pdf=pdf, /delete_ps, density = 600
 
     ; ********************
 
     struc = {ncol:2,nrow:2,ordering:'col'}
-    output = output_dir + 'plots_'+outputstring+'_snr.png'
+    output = output_dir + 'plots_'+outputstring+'_snr'
 
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=crosspower[2:nbins-10,0:Nchancut/2-1],noise_expval=abs(flagpower[2:nbins-10,0:Nchancut/2-1]),$
       noise_meas=abs(residpower[2:nbins-10,0:Nchancut/2-1]),/nnr,/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,$
-      title_prefix=title_pre1,plotfile=output,/png,data_range=[0.01,100.],start_multi_params=struc,/delay_axis,$
-      delay_params=delay_params,kperp_plot_range=kperp_plot_range
+      title_prefix=title_pre1,plotfile=output,data_range=[0.01,100.],start_multi_params=struc,/delay_axis,$
+      delay_params=delay_params,kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=crosspower[2:nbins-10,0:Nchancut/2-1],noise_expval=abs(flagpower[2:nbins-10,0:Nchancut/2-1]),/snr,/plot_wedge_line,$
-      wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre1,plotfile=output,/png,data_range=[1.e-2,1.e6],$
+      wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre1,plotfile=output,data_range=[1.e-2,1.e6],$
       multi_pos=[0.,0.,0.5,0.5],/delay_axis,delay_params=delay_params,weights=weights[2:nbins-10,0:Nchancut/2-1],$
-      kperp_plot_range=kperp_plot_range
+      kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
 
 
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=crosspower_2[2:nbins-10,0:Nchancut/2-1],noise_expval=abs(flagpower_2[2:nbins-10,0:Nchancut/2-1]),/snr,/plot_wedge_line,$
-      wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre2,plotfile=output,/png,multi_pos=[0.5,0.,1,0.5],data_range=[1.e-2,1.e6],$
-      /delay_axis,delay_params=delay_params,weights=weights_2[2:nbins-10,0:Nchancut/2-1],kperp_plot_range=kperp_plot_range
+      wedge_amp=[fov,horizon],window_num=0,title_prefix=title_pre2,plotfile=output,multi_pos=[0.5,0.,1,0.5],data_range=[1.e-2,1.e6],$
+      /delay_axis,delay_params=delay_params,weights=weights_2[2:nbins-10,0:Nchancut/2-1],kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
     kpower_2d_plots,kperp_edges=kper[2:nbins-3],kpar_edges=kpa[0:Nchancut/2],/hinv,hubble_param=hubble_param,$
       power=crosspower_2[2:nbins-10,0:Nchancut/2-1],noise_expval=abs(flagpower_2[2:nbins-10,0:Nchancut/2-1]),$
       noise_meas=abs(residpower_2[2:nbins-10,0:Nchancut/2-1]),/nnr,/plot_wedge_line,wedge_amp=[fov,horizon],window_num=0,$
-      title_prefix=title_pre2,multi_pos=[0.5,0.5,1,1],plotfile=output,/png,data_range=[0.01,100.],/delay_axis,$
-      delay_params=delay_params,kperp_plot_range=kperp_plot_range,note=note
+      title_prefix=title_pre2,multi_pos=[0.5,0.5,1,1],plotfile=output,data_range=[0.01,100.],/delay_axis,$
+      delay_params=delay_params,kperp_plot_range=kperp_plot_range,note=note,png=png,pdf=pdf
 
-    cgps_close, /png, /delete_ps, density = 600
+    cgps_close, png=png, pdf=pdf, /delete_ps, density = 600
 
   endif
 
@@ -697,7 +706,7 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
     ptot_xx = ptot_xx*sigma
     ptot_yy = ptot_yy*sigma
 
-    output = output_dir + 'plots_'+outputstring+'_1D.png'
+    output = output_dir + 'plots_'+outputstring+'_1D'
     cgPS_Open,output,/nomatch
 
     bin_start=1
@@ -738,7 +747,7 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
     cgoplot,ktot_bins[bin_start:Netaa-1],ptot_xx[bin_start:Netaa-1]/2.,color='green',thick=2.5
     cgoplot,ktot_bins[bin_start:Netaa-1],ptot_yy[bin_start:Netaa-1]/2.,color='green',thick=2.5
 
-    cgPS_Close,/png,Density=300,Resize=100.,/allow_transparent,/nomessage
+    cgPS_Close,png=png,pdf=pdf,Density=300,Resize=100.,/allow_transparent,/nomessage
 
   endif
 
