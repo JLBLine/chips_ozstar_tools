@@ -2,7 +2,8 @@
 ;; The code computes and applies the normalisations to take the units from Jy^2Hz^2sr^2 to mK^2 Mpc^3
 ;; and transposes and folds the data across the kpar = 0 line. The code will plot the output from xx and yy pols.
 
-;; Inputs:
+;; ***** Inputs:
+;; General options:
 ;; output_tag: Enter the output_tag that was used to run CHIPS (Entry required)
 ;;   To generate diff PS of something other than E-W and N-S of one run, enter a two element array
 ;; initials: Enter in your initials that were used to create your personal CHIPS_OUT directory (Default: empty)
@@ -15,9 +16,23 @@
 ;; lssa_num: Specify whether kriging has been performed on the input (0: kriging applied, 1: kriging not applied, defaults to 0)
 ;; band_point_weight: An array of 9 integers to indicate what pointings, from -4 to 4, were used. Default is just zenith.
 ;    For example, if pointings -2 to 2 were used, then band_point_weight = [0,0,1,1,1,1,1,0,0]
+
+;; 1D cutting options:
+;; wedge: 0 = no cut, 3.0 = horizon. Default is 0.
+;; wedge_angle: Alternatevely, provide sky angle in degrees to cut. Will overwrite wedge keyword. 103.7 is the horizon, 
+;    120 is buffer in Beardsley et al. 2016 and Barry et al. 2019b
+;; kperp_min_1D: Minimun k perpendicular in lambda. Default 10 wavelengths
+;; kperp_max_1D: Maximum k perpendicular in lambda. Default 50 wavelengths
+;; kpar_min_1D: Minimum k parallel in inverse Mpc. Default 0 Mpc^-1. 
+;    Value of 0.105 Mpc^-1 used in Beardsley et al. 2016 and Barry et al. 2019b
+;; kpar_max_1D: Maximum k parallel in inverse Moc. Default is 10 Mpc^-1 
+;;
+
+;; Dir input and output options:
 ;; output_dir: Optional output directory for plots. Default is home
 ;; input_dir: Optional full-path input directory. 
 ;; pdf: Set to one to make pdfs instead of pngs
+;; *****
 
 ;; Example call (using defaults):
 ;; idl
@@ -27,7 +42,9 @@
 
 pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD=oneD, twoD=twoD, $
   n_freq=n_freq, band=band, base_freq=base_freq, chan_width=chan_width, lssa_num=lssa_num, $
-  beam_point_weight = beam_point_weight, output_dir=output_dir, input_dir=input_dir, pdf=pdf
+  beam_point_weight = beam_point_weight, wedge=wedge, wedge_angle=wedge_angle, kperp_min_1D=kperp_min_1D, $
+  kperp_max_1D=kperp_max_1D, kpar_min_1D=kpar_min_1D, kpar_max_1D=kpar_max_1D, $
+  output_dir=output_dir, input_dir=input_dir, pdf=pdf
 
 
   ;Set default timing resolution
@@ -157,13 +174,11 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   low_k_bin_1D = 5e-3
 
   ;***** Cutting options
-  wedge = 3   ; [0 = no cut; 3.0 = horizon]
-  ;; 103.7 is the horizon
-  wedge_angle = 120.  ;alternatevely, provide sky angle to cut. Will overwrite wedge
-  kperp_min_1D = 18. ;in lambda
-  kperp_max_1D = 80. ;in lambda
-  kpar_min_1D = 0.105  ;in Mpc^-1
-  kpar_max_1D = 10.
+  if ~keyword_set(wedge) then wedge = 0   ; [0 = no cut; 3.0 = horizon]
+  if ~keyword_set(kperp_min_1D) then kperp_min_1D = 10. ;in lambda
+  if ~keyword_set(kperp_max_1D) then kperp_max_1D = 50. ;in lambda
+  if ~keyword_set(kpar_min_1D) then kpar_min_1D = 0.  ;in Mpc^-1
+  if ~keyword_set(kpar_max_1D) then kpar_max_1D = 10. ;in Mpc^-1
   ;*****
 
   ;***** determine size of binary files
