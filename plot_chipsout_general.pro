@@ -152,6 +152,7 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   print, 'Pointings used out of -4,-3,-2,-1,0,1,2,3,4: ' + $
     strjoin(strtrim(beam_point_weight,2),",") + ' (Default: just zenith)' 
 
+  beam_point_weight = beam_point_weight/total(beam_point_weight)
   beam_area = total(beam_point_weight*beamxx)
   beam_area_per_chan = beam_area/Nchanall
 
