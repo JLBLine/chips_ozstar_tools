@@ -74,7 +74,9 @@ You can now run the script with your specific keywords, for example
 plot_chipsout_general, 'my_output_tag', initials='NB', RTS=1, twoD=1, n_freq=384, band='high', lssa_num=0, beam_point_weight = [0.,0.,0.,0.,1.,0.,0.,0.,0.]
 ```
 
-The keywords are 
+### keywords
+
+General options:   
 * output_tag: REQUIRED. Enter the output_tag that was used to run CHIPS to generate N-S and E-W power spectra. Alternatively, add a string array of two output_tags: `['xx_0.iter.output_tag1', 'xx_0.iter.output_tag2']` to specify pols directly or `['output_tag1', 'output_tag2']` which defaults to the `xx` pols only.
 * initials: Enter in your initials that were used to create your personal CHIPS_OUT directory (Default: empty).   
 * FHD, RTS: Specify FHD or RTS inputs with those keywords, set to 1 in case of True.   
@@ -83,8 +85,19 @@ The keywords are
 * band, base_freq: Enter the band name (high, low, ultra-low, defaults to high) or the lowest frequency in the band in Hz. Setting band will default the base_freq to the expected value. Do not use if analyzing subbands.   
 * chan_width: Enter the frequency resolution in Hz, defaults to 80e3.   
 * lssa_num: Specify whether kriging has been performed on the input (0: kriging applied, 1: kriging not applied, defaults to 0).   
-* band_point_weight: An array of 9 integers to indicate what pointings, from -4 to 4, were used. Default is just zenith. For example, if pointings -2 to 2 were used, then band_point_weight = [0,0,1,1,1,1,1,0,0].   
-* output_dir: Output directory for plots. Defaults to your home directory.
-* input_dir: Input directory. Default is built off of initials and lssa_num inputs
+* band_point_weight: An array of 9 integers to indicate what pointings, from -4 to 4, were used. Default is just zenith. For example, if pointings -2 to 2 were used, then band_point_weight = [0,0,1,1,1,1,1,0,0].  
 
-There are various places you can change the code to provide masking (i.e. masking the horizon). If this is required, please inquire, and we will add an interface.
+1D cutting options:    
+* wedge_cut: 0 = no cut, 3.0 = horizon. Default is 0.   
+* wedge_angle: Alternatevely, provide sky angle in degrees to cut. Will overwrite wedge_cut keyword. 103.7 is the horizon, 120 is buffer in Beardsley et al. 2016 and Barry et al. 2019b 
+* kperp_min_1D: Minimun k perpendicular in lambda. Default 10 wavelengths 
+* kperp_max_1D: Maximum k perpendicular in lambda. Default 50 wavelengths 
+* kpar_min_1D: Minimum k parallel in inverse Mpc. Default 0 Mpc^-1. Value of 0.105 Mpc^-1 used in Beardsley et al. 2016 and Barry et al. 2019b   
+* kpar_max_1D: Maximum k parallel in inverse Moc. Default is 10 Mpc^-1    
+
+Input and output options:    
+* output_dir: Output directory for plots. Defaults to your home directory.
+* input_dir: Input directory. Default is built off of initials and lssa_num inputs  
+* pdf: Set to one to make pdfs instead of pngs   
+
+If anything else is required, please inquire, and we will add an interface.
