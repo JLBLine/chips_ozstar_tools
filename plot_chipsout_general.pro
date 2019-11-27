@@ -18,8 +18,8 @@
 ;    For example, if pointings -2 to 2 were used, then band_point_weight = [0,0,1,1,1,1,1,0,0]
 
 ;; 1D cutting options:
-;; wedge: 0 = no cut, 3.0 = horizon. Default is 0.
-;; wedge_angle: Alternatevely, provide sky angle in degrees to cut. Will overwrite wedge keyword. 103.7 is the horizon, 
+;; wedge_cut: 0 = no cut, 3.0 = horizon. Default is 0.
+;; wedge_angle: Alternatevely, provide sky angle in degrees to cut. Will overwrite wedge_cut keyword. 103.7 is the horizon, 
 ;    120 is buffer in Beardsley et al. 2016 and Barry et al. 2019b
 ;; kperp_min_1D: Minimun k perpendicular in lambda. Default 10 wavelengths
 ;; kperp_max_1D: Maximum k perpendicular in lambda. Default 50 wavelengths
@@ -42,7 +42,7 @@
 
 pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD=oneD, twoD=twoD, $
   n_freq=n_freq, band=band, base_freq=base_freq, chan_width=chan_width, lssa_num=lssa_num, $
-  beam_point_weight = beam_point_weight, wedge=wedge, wedge_angle=wedge_angle, kperp_min_1D=kperp_min_1D, $
+  beam_point_weight = beam_point_weight, wedge_cut=wedge_cut, wedge_angle=wedge_angle, kperp_min_1D=kperp_min_1D, $
   kperp_max_1D=kperp_max_1D, kpar_min_1D=kpar_min_1D, kpar_max_1D=kpar_max_1D, $
   output_dir=output_dir, input_dir=input_dir, pdf=pdf
 
@@ -175,7 +175,7 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   low_k_bin_1D = 5e-3
 
   ;***** Cutting options
-  if ~keyword_set(wedge) then wedge = 0   ; [0 = no cut; 3.0 = horizon]
+  if ~keyword_set(wedge_cut) then wedge_cut = 0   ; [0 = no cut; 3.0 = horizon]
   if ~keyword_set(kperp_min_1D) then kperp_min_1D = 10. ;in lambda
   if ~keyword_set(kperp_max_1D) then kperp_max_1D = 50. ;in lambda
   if ~keyword_set(kpar_min_1D) then kpar_min_1D = 0.  ;in Mpc^-1
@@ -204,7 +204,7 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   z = mean(z0_freq/freq -1d)
   cosmology_measures, z, Ez=Ez, comoving_dist_los = DM, omega_matter=omega_matter, omega_lambda=omega_lambda, $
     wedge_factor=wedge_factor, hubble_param=hubble_param
-  if keyword_set(wedge_angle) then wedge = wedge_factor * wedge_angle * !pi/180.
+  if keyword_set(wedge_angle) then wedge = wedge_factor * wedge_angle * !pi/180. else wedge = wedge_cut
   ;*****
 
   umax = 300.
