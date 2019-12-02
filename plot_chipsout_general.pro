@@ -149,8 +149,16 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   if ~keyword_set(obs_volume_file) then begin
     ;Low band is calculated with the high band beam in CHIPS since there is little beam-shape change
     if band EQ 'low' then band_temp = 'high' else band_temp = band
-    beamxx = read_binary('observation_volumes/'+band_temp+'_band_instrumental_xx.csv',N_TABLE_HEADER=2)
-  endif else beamxx = read_binary(obs_volume_file,N_TABLE_HEADER=2)
+    beamxx = read_csv('observation_volumes/'+band_temp+'_band_instrumental_xx.csv',N_TABLE_HEADER=2)
+  endif else beamxx = read_csv(obs_volume_file,N_TABLE_HEADER=2)
+  ;Extract the observation volume from file. Ordered as pointing, w-stack index, and obs volume. 
+  ;EoR observations are assumed to have a w-stack index of 0
+  beam_point_wstack = FLTARR(3,N_elements(beamxx.field1))
+  beam_point_wstack[0,*] = beamxx.field1 ;pointing, from -4 to 4
+  beam_point_wstack[1,*] = beamxx.field2 ;w-stack
+  beam_point_wstack[2,*] = beamxx.field3 ;obs volume
+  beam_point = reform(beam_point_wstack[2,where(beam_point_wstack[1,*] EQ 0)])
+
   if ~keyword_set(beam_point_weight) then begin
     beam_point_weight = [0.,0.,0.,0.,1.,0.,0.,0.,0.]
   endif
@@ -158,7 +166,7 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
     strjoin(strtrim(beam_point_weight,2),",") + ' (Default: just zenith)' 
 
   beam_point_weight = beam_point_weight/total(beam_point_weight)
-  obs_volume = total(beam_point_weight*beamxx) ; in stradians
+  obs_volume = total(beam_point_weight*beam_point)*chan_width*Nchan  ; in stradians hertz
   ;*****
 
   ;***** Plotting options
