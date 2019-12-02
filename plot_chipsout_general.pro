@@ -15,7 +15,8 @@
 ;; chan_width: Enter the frequency resolution in Hz, defaults to 80e3
 ;; lssa_num: Specify whether kriging has been performed on the input (0: kriging applied, 1: kriging not applied, defaults to 0)
 ;; band_point_weight: An array of 9 integers to indicate what pointings, from -4 to 4, were used. Default is just zenith.
-;    For example, if pointings -2 to 2 were used, then band_point_weight = [0,0,1,1,1,1,1,0,0]
+;;   For example, if pointings -2 to 2 were used, then band_point_weight = [0,0,1,1,1,1,1,0,0]
+;; obs_volume_file: Optional observational volume csv file. Defaults to corresponding obs volume file in observation_volumes
 
 ;; 1D cutting options:
 ;; wedge_cut: 0 = no cut, 3.0 = horizon. Default is 0.
@@ -42,9 +43,9 @@
 
 pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD=oneD, twoD=twoD, $
   n_freq=n_freq, band=band, base_freq=base_freq, chan_width=chan_width, lssa_num=lssa_num, $
-  beam_point_weight = beam_point_weight, wedge_cut=wedge_cut, wedge_angle=wedge_angle, kperp_min_1D=kperp_min_1D, $
-  kperp_max_1D=kperp_max_1D, kpar_min_1D=kpar_min_1D, kpar_max_1D=kpar_max_1D, $
-  output_dir=output_dir, input_dir=input_dir, pdf=pdf
+  beam_point_weight = beam_point_weight, obs_volume_file=obs_volume_file, wedge_cut=wedge_cut, $
+  wedge_angle=wedge_angle, kperp_min_1D=kperp_min_1D, kperp_max_1D=kperp_max_1D, kpar_min_1D=kpar_min_1D, $
+  kpar_max_1D=kpar_max_1D, output_dir=output_dir, input_dir=input_dir, pdf=pdf
 
 
   ;Set default timing resolution
@@ -145,7 +146,11 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   ;*****
 
   ;***** Beam volume calculation
-  beamxx = read_binary('beam_area_point_xx_srhz.dat',data_type=4)
+  if ~keyword_set(obs_volume_file) then begin
+    ;Low band is calculated with the high band beam in CHIPS since there is little beam-shape change
+    if band EQ 'low' then band_temp = 'high' else band_temp = band
+    beamxx = read_binary('observation_volumes/'+band_temp+'_band_instrumental_xx.csv',N_TABLE_HEADER=2)
+  endif else beamxx = read_binary(obs_volume_file,N_TABLE_HEADER=2)
   if ~keyword_set(beam_point_weight) then begin
     beam_point_weight = [0.,0.,0.,0.,1.,0.,0.,0.,0.]
   endif
@@ -153,15 +158,7 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
     strjoin(strtrim(beam_point_weight,2),",") + ' (Default: just zenith)' 
 
   beam_point_weight = beam_point_weight/total(beam_point_weight)
-  beam_area = total(beam_point_weight*beamxx)
-  beam_area_per_chan = beam_area/Nchanall
-
-  ; beam area calculated from int (beam^2) for each coarse channel
-  beam_area_steradian = beam_area_per_chan/chan_width
-  ;beam_area_steradian = 0.07597 ; -2 to +2 for BH gridding kernel
-
-  obs_volume = mean(beam_area_steradian)*chan_width*Nchan    ; sr. Hz
-
+  obs_volume = total(beam_point_weight*beamxx) ; in stradians
   ;*****
 
   ;***** Plotting options
