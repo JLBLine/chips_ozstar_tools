@@ -727,16 +727,33 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
     ptot_xx = ptot_xx*sigma
     ptot_yy = ptot_yy*sigma
 
-    output = output_dir + 'plots_'+outputstring+'_1D'
+    ;Set up titles based on inputs
+    if N_elements(outputstring) EQ 1 then begin
+      title_pre1 = 'E-W'
+      title_pre2 = 'N-S'
+      note = outputstring
+      output = output_dir + 'plots_'+outputstring+'_1D'
+    endif else begin
+      title_pre1 = 'Input1'
+      title_pre2 = 'Input2'
+      note = outputstring[0] +outputstring[1]
+      output = output_dir + 'plots_'+outputstring[0]+'_1D'
+      ;note = outputstring[0] + ', ' + outputstring[1]
+    endelse
+
+    ;output = output_dir + 'plots_'+outputstring+'_1D'
     cgPS_Open,output,/nomatch
 
     bin_start=1
 
     ;Write CSV file with all 1d binned values
-    WRITE_CSV, output_dir + '1D_text_values_'+outputstring+'.csv', ktot_bins[bin_start:Netaa-1], pmeas_xx[bin_start:Netaa-1],$
+    WRITE_CSV, output_dir + '1D_text_values_'+note+'.csv', ktot_bins[bin_start:Netaa-1], pmeas_xx[bin_start:Netaa-1],$
       pmeas_yy[bin_start:Netaa-1],xerrhi[bin_start:Netaa-1],xerrlo[bin_start:Netaa-1],ptot_xx[bin_start:Netaa-1],$
       ptot_yy[bin_start:Netaa-1],header=['k [h Mpc^-1]','P XX ['+csv_units+']','P YY ['+csv_units+']','xerrhigh [h Mpc^-1]',$
       'xerrlow [h Mpc^-1]','thermal P XX ['+csv_units+']','thermal P YY ['+csv_units+']']
+
+
+    ;output = output_dir + 'plots_'+outputstring+'_1D'
 
     ;fix error bars to edge of graph window for aesthetics
     xerrhi_plot = xerrhi
