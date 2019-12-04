@@ -98,7 +98,7 @@ def make_grid_sbatch(obs=None,band=None,uvfits_dir=None,uvfits_tag=None,output_t
     else:
         if band == 'ultra':
 	    #command = './gridvisultra'
-            command = './gridvisdiff'
+            command = './gridvisdiffbn'
         else:
             command = "./gridvisdiff"
 
@@ -187,7 +187,7 @@ def make_lssa(band=None,pol=None,cluster=None,drips=None,base_freq=None,freqres=
     outfile.write('cd $CODEDIR\n')
 
     ##Setup the correct arguments to the CHIPS commands
-    if band == 'ultra': band_num = 0
+    if band == 'ultra': band_num = 2
     elif band == 'low': band_num = 0
     elif band == 'high': band_num = 1
 
