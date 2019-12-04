@@ -89,7 +89,7 @@ def make_grid_sbatch(obs=None,band=None,uvfits_dir=None,uvfits_tag=None,output_t
     outfile.write('GPUBOXN=$(printf "%02d" "$SLURM_ARRAY_TASK_ID")\n')
 
     ##Setup the correct arguments to the CHIPS commands
-    if band == 'ultra': band_num = 0
+    if band == 'ultra': band_num = 2
     elif band == 'low': band_num = 0
     elif band == 'high': band_num = 1
 
@@ -97,7 +97,8 @@ def make_grid_sbatch(obs=None,band=None,uvfits_dir=None,uvfits_tag=None,output_t
         command = "./gridvisdrips"
     else:
         if band == 'ultra':
-            command = './gridvisultra'
+	    #command = './gridvisultra'
+            command = './gridvisdiff'
         else:
             command = "./gridvisdiff"
 
@@ -207,7 +208,8 @@ def make_lssa(band=None,pol=None,cluster=None,drips=None,base_freq=None,freqres=
         command2 = "./lssa_fg_drips"
     else:
         if band == 'ultra':
-            command1 = "./prepare_ultra"
+	    #command1 = "./prepare_ultra" ##old vrsion.
+            command1 = "./prepare_diff"
         else:
             command1 = "./prepare_diff"
         command2 = "./lssa_fg_thermal"
