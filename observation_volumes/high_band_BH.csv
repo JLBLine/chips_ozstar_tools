@@ -1,0 +1,11 @@
+Observation volumes in steradian for an Blackman-Harris beam in high band (~165MHz -- 200MHz), separated by pointings from zenith and w-plane index. Calculated from 1/(2*BH_width*BH_integral_for_1x1box)^2. Same for all pointings
+Pointing from zenith, w-plane index, observation volume (str)
+ -4, 0, 0.0756830
+ -3, 0, 0.0756830
+ -2, 0, 0.0756830
+ -1, 0, 0.0756830
+ 0, 0, 0.0756830
+ 1, 0, 0.0756830
+ 2, 0, 0.0756830
+ 3, 0, 0.0756830
+ 4, 0, 0.0756830
