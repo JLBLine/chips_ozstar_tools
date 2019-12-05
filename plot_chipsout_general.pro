@@ -17,6 +17,7 @@
 ;; band_point_weight: An array of 9 integers to indicate what pointings, from -4 to 4, were used. Default is just zenith.
 ;;   For example, if pointings -2 to 2 were used, then band_point_weight = [0,0,1,1,1,1,1,0,0]
 ;; obs_volume_file: Optional observational volume csv file. Defaults to corresponding obs volume file in observation_volumes
+;; no_lssa: Optional flag to indicate that fft_krig was used instead of one of the lssa functions (Default:0)
 
 ;; 1D cutting options:
 ;; wedge_cut: 0 = no cut, 3.0 = horizon. Default is 0.
@@ -43,7 +44,7 @@
 
 pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD=oneD, twoD=twoD, $
   n_freq=n_freq, band=band, base_freq=base_freq, chan_width=chan_width, lssa_num=lssa_num, $
-  beam_point_weight = beam_point_weight, obs_volume_file=obs_volume_file, wedge_cut=wedge_cut, $
+  beam_point_weight = beam_point_weight, obs_volume_file=obs_volume_file, no_lssa=no_lssa, wedge_cut=wedge_cut, $
   wedge_angle=wedge_angle, kperp_min_1D=kperp_min_1D, kperp_max_1D=kperp_max_1D, kpar_min_1D=kpar_min_1D, $
   kpar_max_1D=kpar_max_1D, output_dir=output_dir, input_dir=input_dir, pdf=pdf
 
@@ -137,12 +138,6 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
       'ultra-low': if keyword_set(FHD) then base_freq = 75.92e6 else if keyword_set(RTS) then base_freq = 75.52e6
     endcase
   endif
-
-  ;Scale expected Tsys to match the center of the frequency band
-  Tsys_high = 220. ;K for 182 MHz (scales automatically for low)
-  Tsys = Tsys_high*( 182./round((base_freq + (chan_width*n_freq)/2.)/1e6) )^2.6 ;K
-  print, 'Expected Tsys is ' + strtrim(Tsys,2)
-
   ;*****
 
   ;***** Beam volume calculation
@@ -210,6 +205,12 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   cosmology_measures, z, Ez=Ez, comoving_dist_los = DM, omega_matter=omega_matter, omega_lambda=omega_lambda, $
     wedge_factor=wedge_factor, hubble_param=hubble_param
   if keyword_set(wedge_angle) then wedge = wedge_factor * wedge_angle * !pi/180. else wedge = wedge_cut
+  
+  ;Scale expected Tsys to match the center redshift of the band/subband
+  ;From Wyithe & Morales 2007, temperature is dominated by foregrounds in low-freq radio
+  ;sqrt(2) factor for single pol
+  Tsys = 280. * ((1+z)/7.5)^2.3 / sqrt(2.)
+  print, 'Expected Tsys is ' + strtrim(Tsys,2)
   ;*****
 
   umax = 300.
@@ -373,8 +374,7 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   ;For both FHD and scaled RTS, multiply by 2 (4 for variances) to get
   ;; to estimate of Stokes I rather than instrumental pol
   if keyword_set(FHD) then cal_scale_factor=1. else cal_scale_factor=2.
-  stokes_I_factor=2.
-  noise_factor=2.
+  stokes_I_factor=2^2.
   print, 'Received polarized power (XX+YY convention)'
   ;if keyword_set(FHD) then cal_scale_factor=(2.) else cal_scale_factor=1.
   ;stokes_I_factor=1.
@@ -397,12 +397,35 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   print, 'Applying density correction'
   den_corr = 0.5 ;for 0.5 lambda resolution, see Barry et al. 2019a
 
-  Tsys_correction = 1./2. * Tsys^2. / 110.^2.
+  ;CHIPS applies a scaling to the Tsys dependent on band_num. Needs to be reversed
+  ;What the applied Tsys is depends on whether or not lssa was run or a straight fft (fft_krig)
+  ;Default is lssa
+  if keyword_set(no_lssa) then base_applied_Tsys = 110. else base_applied_Tsys = 440.
+  if keyword_set(band) then begin
+    case band of
+      'high': applied_Tsys = base_applied_Tsys * 1.16
+      'low': applied_Tsys = base_applied_Tsys
+      ;run_CHIPS sets band_num to 0 for ultra-low. if it is set properly to 3, then this needs to change to be 110. * 0.87
+      'ultra-low': applied_Tsys = base_applied_Tsys
+    endcase
+  endif else begin
+    print, "Please set band to get accurate weights correction. This needs to match what was set in CHIPS. Defaulting to high."
+    applied_Tsys = base_applied_Tsys * 1.16
+  endelse
+
+  ;CHIPS fft_krig has a different noise calculation 
+  ;In Jy for sigma_xx = (2*k*t_sys) / (effective_area * sqrt(df * dtau)) where I=(xx+yy)/2
+  ;stokes_I_factor will correct for I=(xx+yy)/2 -> I=xx+yy
+  if keyword_set(no_lssa) then begin
+    Tsys_correction = Tsys^2. / applied_Tsys^2.
+  endif else Tsys_correction = 4.* 2. * Tsys^2. / applied_Tsys^2.
+
   normalisation_power = normalisation * stokes_I_factor / cal_scale_factor^2. / den_corr
   normalisation_weights = normalisation * stokes_I_factor / weights_factor / Tsys_correction $
     / vis_weights_norm / evenodd_weights_factor / sqrt(Nchan)
 
-  expected_noise = noise_factor*boltz*Tsys*1.e26/D^2/sqrt(bw/Nchan*deltat)   ; Jy
+  ;for I=xx+yy
+  expected_noise = boltz*Tsys*1.e26/D^2/sqrt(bw/Nchan*deltat)   ; Jy
   expected_noise = (expected_noise)^2   ; square ->Jy^2
 
 
