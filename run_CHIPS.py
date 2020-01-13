@@ -210,13 +210,15 @@ def make_lssa(band=None,pol=None,cluster=None,drips=None,base_freq=None,freqres=
         if band == 'ultra':
 	    #command1 = "./prepare_ultra" ##old vrsion.
             command1 = "./prepare_diff"
+            krig = 1
         else:
             command1 = "./prepare_diff"
+            krig = 0
         command2 = "./lssa_fg_thermal"
 
     ##In the commnand below, 80 is the number of k bins, and 300 is the maximum uv value to grid up to
     cmd1 = "srun --mem=30000 --export=ALL %s %s_%s %d 0 '%s' %s_%s %d -c %.5f -p %.3f"  %(command1,uvfits_dir,output_tag,num_chans,pol,uvfits_dir,output_tag,band_num,freqres,timeres)
-    cmd2 = "srun --mem=30000 --export=ALL %s %s_%s %d 80 '%s' 300. %s_%s 0 %d 0 -c %.5f -p %.3f"  %(command2,uvfits_dir,output_tag,num_chans,pol,uvfits_dir,output_tag,band_num,freqres,timeres)
+    cmd2 = "srun --mem=30000 --export=ALL %s %s_%s %d 80 '%s' 300. %s_%s %d %d 0 -c %.5f -p %.3f"  %(command2,uvfits_dir,output_tag,num_chans,pol,uvfits_dir,output_tag,krig,band_num,freqres,timeres)
 
 
     if base_freq:
