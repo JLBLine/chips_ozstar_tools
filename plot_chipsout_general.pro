@@ -46,7 +46,8 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   n_freq=n_freq, band=band, base_freq=base_freq, chan_width=chan_width, lssa_num=lssa_num, $
   beam_point_weight = beam_point_weight, obs_volume_file=obs_volume_file, no_lssa=no_lssa, wedge_cut=wedge_cut, $
   wedge_angle=wedge_angle, kperp_min_1D=kperp_min_1D, kperp_max_1D=kperp_max_1D, kpar_min_1D=kpar_min_1D, $
-  kpar_max_1D=kpar_max_1D, output_dir=output_dir, input_dir=input_dir, pdf=pdf
+  kpar_max_1D=kpar_max_1D, output_dir=output_dir, input_dir=input_dir, pdf=pdf, $
+  plot_max_1D=plot_max_1D, plot_min_1D=plot_min_1D, plot_max_2D=plot_max_2D, plot_min_2D=plot_min_2D
 
 
   ;Set default timing resolution
@@ -166,10 +167,10 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
 
   ;***** Plotting options
   mk_units=1
-  plot_max_1D = 1.e11
-  plot_min_1D = 1.e3
-  plot_max_2D = 1.e15
-  plot_min_2D = 1.e3
+  if ~keyword_set(plot_max_1D) then plot_max_1D = 1.e11
+  if ~keyword_set(plot_min_1D) then plot_min_1D = 1.e3
+  if ~keyword_set(plot_max_2D) then plot_max_2D = 1.e15
+  if ~keyword_set(plot_min_2D) then plot_min_2D = 1.e3
   ;*****
 
   low_k_bin_1D = 5e-3
