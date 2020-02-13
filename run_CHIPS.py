@@ -117,7 +117,7 @@ def write_clean_script(uvfits_dir=None,uvfits_tag=None,ENV_VARIABLES=None,cluste
     outfile.write('#!/bin/bash -l\n')
     outfile.write('#SBATCH --job-name="clean_%s_%s"\n' %(uvfits_dir,output_tag))
     outfile.write('#SBATCH --export=ALL\n')
-    outfile.write('#SBATCH --time=8:00:00\n')
+    outfile.write('#SBATCH --time=4:00:00\n')
     outfile.write('#SBATCH --nodes=1\n')
     outfile.write('#SBATCH --cpus-per-task=1\n')
     outfile.write('#SBATCH --output=clean_%s_%s.%%j.o\n' %(uvfits_dir,output_tag))
@@ -139,9 +139,9 @@ def write_clean_script(uvfits_dir=None,uvfits_tag=None,ENV_VARIABLES=None,cluste
 
     outfile.write('cd $CODEDIR\n')
 
-    outfile.write('time rm ${OUTPUTDIR}bv_freq*.extension.dat\n')
-    outfile.write('time rm ${OUTPUTDIR}noise_freq*.extension.dat\n')
-    outfile.write('time rm ${OUTPUTDIR}weights_freq*.extension.dat\n')
+    outfile.write('time rm ${OUTPUTDIR}bv_freq*.%s_%s.dat\n' %(uvfits_dir,output_tag))
+    outfile.write('time rm ${OUTPUTDIR}noise_freq*.%s_%s.dat\n' %(uvfits_dir,output_tag))
+    outfile.write('time rm ${OUTPUTDIR}weights_freq*.%s_%s.dat\n' %(uvfits_dir,output_tag))
     outfile.write('time rm ${OUTPUTDIR}bvdiff_freq*.%s_%s.dat\n' %(uvfits_dir,output_tag))
     outfile.write('time rm ${OUTPUTDIR}noisediff_freq*.%s_%s.dat\n' %(uvfits_dir,output_tag))
 
@@ -156,7 +156,7 @@ def write_clean_script(uvfits_dir=None,uvfits_tag=None,ENV_VARIABLES=None,cluste
 
     return 'run_clean_%s_%s.sh' %(uvfits_dir,output_tag)
 
-def make_lssa(band=None,pol=None,cluster=None,drips=None,base_freq=None,freqres=None,timeres=None):
+def make_lssa(band=None,pol=None,cluster=None,drips=None,base_freq=None,freqres=None,timeres=None,lssa_cores=None):
 
     outfile = open('run_lssa_%s_%s_%s.sh' %(uvfits_dir,output_tag,pol),'w+')
 
@@ -165,7 +165,7 @@ def make_lssa(band=None,pol=None,cluster=None,drips=None,base_freq=None,freqres=
     outfile.write('#SBATCH --export=NONE\n')
     outfile.write('#SBATCH --time=4:00:00\n')
     outfile.write('#SBATCH --nodes=1\n')
-    outfile.write('#SBATCH --cpus-per-task=16\n')
+    outfile.write('#SBATCH --cpus-per-task=%d\n' %lssa_cores)
     outfile.write('#SBATCH --output=lssa_%s_%s_%s.%%j.o\n' %(uvfits_dir,output_tag,pol))
     outfile.write('#SBATCH --error=lssa_%s_%s_%s.%%j.e\n' %(uvfits_dir,output_tag,pol))
     outfile.write('#SBATCH --mem=30000\n')
@@ -181,7 +181,7 @@ def make_lssa(band=None,pol=None,cluster=None,drips=None,base_freq=None,freqres=
         pass
 
     outfile.write('source %s\n' %ENV_VARIABLES)
-    outfile.write('export OMP_NUM_THREADS=16\n')
+    outfile.write('export OMP_NUM_THREADS=%d\n' %lssa_cores)
     outfile.write('printenv\n')
 
     outfile.write('cd $CODEDIR\n')
@@ -257,6 +257,7 @@ if __name__ == '__main__':
     parser.add_argument('--no_uvfits_check',default=False,action='store_true',help="By default script checks all uvfits exist and will not run if they are missing. Add option to switch this function off")
     parser.add_argument('--no_clean',default=False,action='store_true',help="By default script checks all uvfits exist and will not run if they are missing. Add option to switch this function off")
     #parser.add_argument('--env_variables',default='/fred/oz048/MWA/CODE/CHIPS/chips/ozstar_env_variables.sh',help="Cluster and user specific variables needed by CHIPS to run")
+    parser.add_argument('--lssa_cores',default=16,help="Number of cores to use in the lssa step - defaults to 16")
 
     args = parser.parse_args()
 
@@ -273,6 +274,7 @@ if __name__ == '__main__':
     timeres = float(args.timeres)
     freqres = float(args.freqres)
     field = int(args.field)
+    lssa_cores = int(args.lssa_cores)
 
     ##Test the necessary arguments have been passed
     obs_list = test_false('--obs_list', args.obs_list)
@@ -320,8 +322,8 @@ if __name__ == '__main__':
 
     clean_job = write_clean_script(uvfits_dir=uvfits_dir,uvfits_tag=uvfits_tag,ENV_VARIABLES=ENV_VARIABLES,cluster=cluster,no_delete_log=no_delete_log)
 
-    job_xx = make_lssa(band=band,pol='xx',cluster=cluster,drips=drips,base_freq=base_freq,timeres=timeres,freqres=freqres)
-    job_yy = make_lssa(band=band,pol='yy',cluster=cluster,drips=drips,base_freq=base_freq,timeres=timeres,freqres=freqres)
+    job_xx = make_lssa(band=band,pol='xx',cluster=cluster,drips=drips,base_freq=base_freq,timeres=timeres,freqres=freqres,lssa_cores=lssa_cores)
+    job_yy = make_lssa(band=band,pol='yy',cluster=cluster,drips=drips,base_freq=base_freq,timeres=timeres,freqres=freqres,lssa_cores=lssa_cores)
     lssa_jobs = [job_xx,job_yy]
 
 
