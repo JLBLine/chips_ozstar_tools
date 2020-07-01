@@ -299,7 +299,7 @@ if __name__ == '__main__':
         exit('Cannot convert --obs_range into two numbers - please check your input. Exiting')
     
     try:
-	ENV_VARIABLES = environ['CHIPS_ENV_VARIABLES']
+        ENV_VARIABLES = environ['CHIPS_ENV_VARIABLES']
     except KeyError:
         exit("Cannot find environmental variable CHIPS_ENV_VARIABLES - must be in your ~/.bashrc (and you must run sh ~/.bashrc if you've just updated it). Exiting now")
 
@@ -334,48 +334,48 @@ if __name__ == '__main__':
     if args.no_run:
         pass
     else:
-	#Make output logs directory
-    	cwd = os.getcwd()
+        #Make output logs directory
+        cwd = os.getcwd()
         output_log_dir = 'logs_' + output_tag
-    	if not os.path.exists(output_log_dir):
+        if not os.path.exists(output_log_dir):
     	    os.mkdir(output_log_dir)
 
         grid_job_name = cwd + '/' + output_log_dir + '/' + grid_jobs[0].strip('.sh')
-	cmd = 'sbatch -e %s-%%\A_%%a.err -o %s-%%\A_%%a.out %s' %(grid_job_name,grid_job_name,grid_jobs[0])
+        cmd = 'sbatch -e %s-%%\A_%%a.err -o %s-%%\A_%%a.out %s' %(grid_job_name,grid_job_name,grid_jobs[0])
         #print(cmd)
-        grid_job_message = check_output(cmd,shell=True)
+        grid_job_message = check_output(cmd,shell=True).decode()
         grid_job_ID_start = grid_job_message.split()[-1].strip('\n')
-    	grid_jobs_ID_all = []
-    	grid_jobs_ID_all.append(grid_job_ID_start)
-    	print(grid_job_ID_start)
+        grid_jobs_ID_all = []
+        grid_jobs_ID_all.append(grid_job_ID_start)
+        print(grid_job_ID_start)
 
     	##launch other grid jobs, with a dependance that the last one has run
         for grid_job in grid_jobs[1:]:
-    	    grid_job_name = cwd + '/' + output_log_dir + '/' + grid_job.strip('.sh')
+            grid_job_name = cwd + '/' + output_log_dir + '/' + grid_job.strip('.sh')
             grid_jobs_ID_join = ''.join(grid_jobs_ID_all)
             cmd = 'sbatch --dependency=afterok:%s -e %s-%%\A_%%a.err -o %s-%%\A_%%a.out %s' %(grid_jobs_ID_join,grid_job_name,grid_job_name,grid_job)
             #print(cmd)
             grid_job_message = check_output(cmd,shell=True)
             grid_job_ID = grid_job_message.split()[-1].strip('\n')
-    	    grid_jobs_ID_all.append(':')
-    	    grid_jobs_ID_all.append(grid_job_ID)
+            grid_jobs_ID_all.append(':')
+            grid_jobs_ID_all.append(grid_job_ID)
             print(grid_job_ID)
 
-    	##Run lssa xx
-    	grid_jobs_ID_all = ''.join(grid_jobs_ID_all)
-    	lssa_xx_job_name = cwd + '/' + output_log_dir + '/' + job_xx.strip('.sh')
+        ##Run lssa xx
+        grid_jobs_ID_all = ''.join(grid_jobs_ID_all)
+        lssa_xx_job_name = cwd + '/' + output_log_dir + '/' + job_xx.strip('.sh')
         cmd = 'sbatch --dependency=afterok:%s -e %s-%%j.err -o %s-%%j.out %s' %(grid_jobs_ID_all,lssa_xx_job_name,lssa_xx_job_name,job_xx)
         #print(cmd)
-        xx_job_message = check_output(cmd,shell=True)
+        xx_job_message = check_output(cmd,shell=True).decode()
         xx_job_ID = xx_job_message.split()[-1].strip('\n')
         ##Run lssa yy
-    	lssa_yy_job_name = cwd + '/' + output_log_dir + '/' + job_yy.strip('.sh')
+        lssa_yy_job_name = cwd + '/' + output_log_dir + '/' + job_yy.strip('.sh')
         cmd = 'sbatch --dependency=afterok:%s -e %s-%%j.err -o %s-%%j.out %s' %(grid_jobs_ID_all,lssa_yy_job_name,lssa_yy_job_name,job_yy)
         #print(cmd)
-        yy_job_message = check_output(cmd,shell=True)
+        yy_job_message = check_output(cmd,shell=True).decode()
         yy_job_ID = yy_job_message.split()[-1].strip('\n')
 
-    	clean_job_name = cwd + '/' + output_log_dir + '/' + clean_job.strip('.sh')
+        clean_job_name = cwd + '/' + output_log_dir + '/' + clean_job.strip('.sh')
         if args.no_clean:
             pass
         else:
