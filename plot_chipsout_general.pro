@@ -17,18 +17,27 @@
 ;; band_point_weight: An array of 9 integers to indicate what pointings, from -4 to 4, were used. Default is just zenith.
 ;;   For example, if pointings -2 to 2 were used, then band_point_weight = [0,0,1,1,1,1,1,0,0]
 ;; obs_volume_file: Optional observational volume csv file. Defaults to corresponding obs volume file in observation_volumes
-;; no_lssa: Optional flag to indicate that fft_krig was used instead of one of the lssa functions (Default:0)
+;; set_tsys: Either set the tsys directly (i.e. set_tsys=200.) or set to 1 to scale the tsys to an updated theoretical number.
+;;   For devel purposes and pipeline comparison only. Default: 0
 
 ;; 1D cutting options:
 ;; wedge_cut: 0 = no cut, 3.0 = horizon. Default is 0.
 ;; wedge_angle: Alternatevely, provide sky angle in degrees to cut. Will overwrite wedge_cut keyword. 103.7 is the horizon, 
 ;    120 is buffer in Beardsley et al. 2016 and Barry et al. 2019b
-;; kperp_min_1D: Minimun k perpendicular in lambda. Default 10 wavelengths
-;; kperp_max_1D: Maximum k perpendicular in lambda. Default 50 wavelengths
+;; kperp_min_1D_lambda: Minimum k perpendicular in lambda. Default 10 wavelengths
+;; kperp_max_1D_lambda: Maximum k perpendicular in lambda. Default 50 wavelengths
+;; kperp_min_1D_Mpc: Minimum k perpendicular in Mpc^-1. Default is unset. Supercedes kperp_min_1D_lambda if set.
+;; kperp_max_1D_Mpc: Maximum k perpendicular in Mpc^-1. Default is unset. Supercedes kperp_max_1D_lambda if set.
 ;; kpar_min_1D: Minimum k parallel in inverse Mpc. Default 0 Mpc^-1. 
 ;    Value of 0.105 Mpc^-1 used in Beardsley et al. 2016 and Barry et al. 2019b
-;; kpar_max_1D: Maximum k parallel in inverse Moc. Default is 10 Mpc^-1 
-;;
+;; kpar_max_1D: Maximum k parallel in inverse Mpc. Default is 10 Mpc^-1 
+
+;; Plotting options:
+;; plot_max_1D: 1D plot maximum range. Default is 10^11 (units are either mK^2 (mK_units=1) or mK^2 h^-3 Mpc^3 (mK_units=0))
+;; plot_min_1D: 1D plot minimum range. Default is 10^3 (units are either mK^2 (mK_units=1) or mK^2 h^-3 Mpc^3 (mK_units=0))
+;; plot_max_2D: 2D plot maximum range. Default is 10^15 mK^2 h^-3 Mpc^3
+;; plot_min_2D: 2D plot minimum range. Default is 10^3 mK^2 h^-3 Mpc^3
+;; mK_units: 1D plots in mK^2 units. Default is 1.
 
 ;; Dir input and output options:
 ;; output_dir: Optional output directory for plots. Default is home
@@ -44,11 +53,11 @@
 
 pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD=oneD, twoD=twoD, $
   n_freq=n_freq, band=band, base_freq=base_freq, chan_width=chan_width, lssa_num=lssa_num, $
-  beam_point_weight = beam_point_weight, obs_volume_file=obs_volume_file, no_lssa=no_lssa, wedge_cut=wedge_cut, $
-  wedge_angle=wedge_angle, kperp_min_1D=kperp_min_1D, kperp_max_1D=kperp_max_1D, kpar_min_1D=kpar_min_1D, $
+  beam_point_weight = beam_point_weight, obs_volume_file=obs_volume_file, set_tsys=set_tsys, wedge_cut=wedge_cut, $
+  wedge_angle=wedge_angle, kperp_min_1D_lambda=kperp_min_1D_lambda, kperp_max_1D_lambda=kperp_max_1D_lambda, $
+  kperp_min_1D_Mpc=kperp_min_1D_Mpc, kperp_max_1D_Mpc=kperp_max_1D_Mpc, kpar_min_1D=kpar_min_1D, $
   kpar_max_1D=kpar_max_1D, output_dir=output_dir, input_dir=input_dir, pdf=pdf, $
-  plot_max_1D=plot_max_1D, plot_min_1D=plot_min_1D, plot_max_2D=plot_max_2D, plot_min_2D=plot_min_2D
-
+  plot_max_1D=plot_max_1D, plot_min_1D=plot_min_1D, plot_max_2D=plot_max_2D, plot_min_2D=plot_min_2D, mK_units=mK_units
 
   ;Set default timing resolution
   if keyword_set(FHD) then begin
@@ -166,21 +175,11 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   ;*****
 
   ;***** Plotting options
-  mk_units=1
+  if ~keyword_set(mK_units) then mK_units=1
   if ~keyword_set(plot_max_1D) then plot_max_1D = 1.e11
   if ~keyword_set(plot_min_1D) then plot_min_1D = 1.e3
   if ~keyword_set(plot_max_2D) then plot_max_2D = 1.e15
   if ~keyword_set(plot_min_2D) then plot_min_2D = 1.e3
-  ;*****
-
-  low_k_bin_1D = 5e-3
-
-  ;***** Cutting options
-  if ~keyword_set(wedge_cut) then wedge_cut = 0   ; [0 = no cut; 3.0 = horizon]
-  if ~keyword_set(kperp_min_1D) then kperp_min_1D = 10. ;in lambda
-  if ~keyword_set(kperp_max_1D) then kperp_max_1D = 50. ;in lambda
-  if ~keyword_set(kpar_min_1D) then kpar_min_1D = 0.  ;in Mpc^-1
-  if ~keyword_set(kpar_max_1D) then kpar_max_1D = 10. ;in Mpc^-1
   ;*****
 
   ;***** determine size of binary files
@@ -200,6 +199,15 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   f21 = c/0.21
   ;*****
 
+  ;***** Cutting options
+  if ~keyword_set(wedge_cut) then wedge_cut = 0   ; [0 = no cut; 3.0 = horizon]
+  if ~keyword_set(kperp_min_1D_lambda) then kperp_min_1D_lambda = 10. ;in lambda
+  if ~keyword_set(kperp_max_1D_lambda) then kperp_max_1D_lambda = 50. ;in lambda
+  if ~keyword_set(kpar_min_1D) then kpar_min_1D = 0.  ;in Mpc^-1
+  if ~keyword_set(kpar_max_1D) then kpar_max_1D = 10. ;in Mpc^-1
+  low_k_bin_1D = 5e-3
+  ;*****
+
   freq = dindgen(Nchan)*chan_width + base_freq
   z0_freq = 1420.4057517667e6 ;; Hz
   z = mean(z0_freq/freq -1d)
@@ -212,6 +220,9 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   ;sqrt(2) factor for single pol
   Tsys = 280. * ((1+z)/7.5)^2.3 / sqrt(2.)
   print, 'Expected Tsys is ' + strtrim(Tsys,2)
+  if keyword_set(set_tsys) then begin
+    if set_tsys GT 1 then Tsys = set_tsys
+  endif
   ;*****
 
   umax = 300.
@@ -398,30 +409,31 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   print, 'Applying density correction'
   den_corr = 0.5 ;for 0.5 lambda resolution, see Barry et al. 2019a
 
-  ;CHIPS applies a scaling to the Tsys dependent on band_num. Needs to be reversed
-  ;What the applied Tsys is depends on whether or not lssa was run or a straight fft (fft_krig)
-  ;Default is lssa
-  if keyword_set(no_lssa) then base_applied_Tsys = 110. else base_applied_Tsys = 440.
-  if keyword_set(band) then begin
-    case band of
-      'high': applied_Tsys = base_applied_Tsys * 1.16
-      'low': applied_Tsys = base_applied_Tsys
-      ;run_CHIPS sets band_num to 0 for ultra-low. if it is set properly to 3, then this needs to change to be 110. * 0.87
-      'ultra-low': applied_Tsys = base_applied_Tsys
-    endcase
-  endif else begin
-    print, "Please set band to get accurate weights correction. This needs to match what was set in CHIPS. Defaulting to high."
-    applied_Tsys = base_applied_Tsys * 1.16
-  endelse
+  ;CHIPS applies a scaling to the Tsys dependent on band_num.
+  ;What the applied Tsys is depends on whether or not lssa was run or a straight fft (fft_krig). 
+  ;Default is chips_2019 applicable (fft_krig)
+  if keyword_set(set_tsys) then begin
+    base_applied_Tsys = 110.
+    if keyword_set(band) then begin
+      case band of
+        'high': applied_Tsys = base_applied_Tsys * 1.16
+        'low': applied_Tsys = base_applied_Tsys
+        ;run_CHIPS sets band_num to 0 for ultra-low. if it is set properly to 3, then this needs to change to be 110. * 0.87
+        'ultra-low': applied_Tsys = base_applied_Tsys
+      endcase
+    endif else begin
+      print, "Please set band to get accurate weights correction. This needs to match what was set in CHIPS. Defaulting to high."
+      applied_Tsys = base_applied_Tsys * 1.16
+    endelse
 
-  ;CHIPS fft_krig has a different noise calculation 
-  ;In Jy for sigma_xx = (2*k*t_sys) / (effective_area * sqrt(df * dtau)) where I=(xx+yy)/2
-  ;stokes_I_factor will correct for I=(xx+yy)/2 -> I=xx+yy
-  if keyword_set(no_lssa) then begin
-    Tsys_correction = Tsys^2. / applied_Tsys^2.
-  endif else Tsys_correction = 4.* 2. * Tsys^2. / applied_Tsys^2.
+    ;CHIPS fft_krig has a different noise calculation 
+    ;In Jy for sigma_xx = (2*k*t_sys) / (effective_area * sqrt(df * dtau)) where I=(xx+yy)/2
+    ;stokes_I_factor will correct for I=(xx+yy)/2 -> I=xx+yy
+    Tsys_correction = Tsys^2. / applied_Tsys^2. ;applicable to chips_2019 only
+    print, "Scaled weights to match a Tsys of " + strtrim(Tsys,2)
+  endif else Tsys_correction=1 ;default Tsys correction off
 
-  normalisation_power = normalisation * stokes_I_factor / cal_scale_factor^2. / den_corr
+  normalisation_power = normalisation * stokes_I_factor / cal_scale_factor^2. / den_corr / evenodd_weights_factor
   normalisation_weights = normalisation * stokes_I_factor / weights_factor / Tsys_correction $
     / vis_weights_norm / evenodd_weights_factor / sqrt(Nchan)
 
@@ -503,8 +515,11 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   fov =  wedge_factor * 20d * !dpi / 180d
 
   ; 1D cuts, convert from lambda to Mpc^-1
-  kperp_min_1D = kperp_min_1D / conv_factor
-  kperp_max_1D = kperp_max_1D / conv_factor
+  kperp_min_1D = kperp_min_1D_lambda / conv_factor
+  kperp_max_1D = kperp_max_1D_lambda / conv_factor
+  ; 1D cuts if specifically set in Mpc^-1
+  if keyword_set(kperp_min_1D_Mpc) then kperp_min_1D = kperp_min_1D_Mpc
+  if keyword_set(kperp_max_1D_Mpc) then kperp_max_1D = kperp_max_1D_Mpc
 
   mx = plot_max_2D
   mn = plot_min_2D
@@ -520,7 +535,7 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   ; ****************************
   ; ****************************
 
-  kperp_plot_range=[7.,200.]/conv_factor ;in h Mpc^-1
+  kperp_plot_range=[7.,200.]/conv_factor ;in Mpc^-1
 
   if keyword_set(twoD) then begin
 
@@ -551,6 +566,7 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
       kperp_plot_range=kperp_plot_range,png=png,pdf=pdf
 
     cgps_close, png=png, pdf=pdf, /delete_ps, density = 600
+
 
     ; ********************************
 
@@ -656,6 +672,8 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
 
     cgps_close, png=png, pdf=pdf, /delete_ps, density = 600
 
+    ;**********************
+
   endif
 
   ; ******************************************************************************************
@@ -682,6 +700,7 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
     ;ktot_bins = (dindgen(Netaa+1)/float(Netaa))^3.*kmax+0.05
     ;ktot_bins = (dindgen(Netaa+1)/float(Netaa))^1.55*kmax+0.03
 
+    bin_scheme='default'
     ktot_bins = (dindgen(Netaa+1)/float(Netaa))^1.4*kmax+low_k_bin_1D
     ;ktot_bins = findgen(Netaa+1)*0.0288 + low_k_bin_1D     ; nichole settings
     noise_obs_xx = sqrt(weights)
@@ -693,12 +712,11 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
       for j = 0 , Neta-1 do begin
 
         for k = 0 , Netaa-1 do begin
-          if ((sqrt(kper[i]^2 + kpa[j]^2) ge ktot_bins[k]) and (sqrt(kper[i]^2 + kpa[j]^2) lt ktot_bins[k+1])) then begin
-            if ((kpa[j] gt kper[i]*wedge) and (kper[i] lt kperp_max_1D) and (kper[i] ge kperp_min_1D) and (kpa[j] gt kpar_min_1D)) then begin
+          if ((sqrt(kper[i]^2 + kpa[j]^2) ge ktot_bins[k]) and (sqrt(kper[i]^2 + kpa[j]^2) le ktot_bins[k+1])) then begin
+            if ((kpa[j] ge kper[i]*wedge) and (kper[i] le kperp_max_1D) and (kper[i] ge kperp_min_1D) and (kpa[j] ge kpar_min_1D)) then begin
 
               ptot_xx[k] = ptot_xx[k] + (noise_obs_xx[i,j])^2
               ptot_yy[k] = ptot_yy[k] + (noise_obs_yy[i,j])^2
-
               pmeas_xx[k] = pmeas_xx[k] + (crosspower[i,j])*(noise_obs_xx[i,j])^2
               pmeas_yy[k] = pmeas_yy[k] + (crosspower_2[i,j])*(noise_obs_yy[i,j])^2
               num[k] = num[k] + float(fg_num[i,j])/Nchan
@@ -762,22 +780,29 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
       title_pre2 = 'Input2'
       note = outputstring[0] +outputstring[1]
       output = output_dir + 'plots_'+outputstring[0]+'_1D'
-      ;note = outputstring[0] + ', ' + outputstring[1]
     endelse
 
-    ;output = output_dir + 'plots_'+outputstring+'_1D'
+    ;name formatting
+    if keyword_set(set_tsys) then tsys_name='_tsys'+number_formatter(Tsys) else tsys_name=''
+    if keyword_set(wedge_angle) then wedge_name='_wedgeangle'+number_formatter(wedge_angle) else wedge_name='_wedgecut'+number_formatter(wedge_cut)
+    if ~keyword_set(kperp_min_1D_Mpc) AND ~keyword_set(kperp_max_1D_Mpc) then $
+      kperp_name = '_kperplambda'+number_formatter(kperp_min_1D_lambda)+'-'+number_formatter(kperp_max_1D_lambda) $
+      else kperp_name= '_kperp'+number_formatter(kperp_min_1D)+'-'+number_formatter(kperp_max_1D)
+    kpar_name = '_kpar'+number_formatter(kpar_min_1D)+'-'+number_formatter(kpar_max_1D)
+    freq_name = '_nfreq' + number_formatter(n_freq)
+
+    output = output + freq_name + bin_scheme + tsys_name + wedge_name + kperp_name + kpar_name + '.ps'
     cgPS_Open,output,/nomatch
 
     bin_start=1
 
     ;Write CSV file with all 1d binned values
-    WRITE_CSV, output_dir + '1D_text_values_'+note+'.csv', ktot_bins[bin_start:Netaa-1], pmeas_xx[bin_start:Netaa-1],$
+    csv_name = output_dir + '1D_values_' + note + freq_name + bin_scheme + tsys_name + wedge_name + kperp_name + kpar_name + '.csv'
+    WRITE_CSV, csv_name, ktot_bins[bin_start:Netaa-1], pmeas_xx[bin_start:Netaa-1],$
       pmeas_yy[bin_start:Netaa-1],xerrhi[bin_start:Netaa-1],xerrlo[bin_start:Netaa-1],ptot_xx[bin_start:Netaa-1],$
       ptot_yy[bin_start:Netaa-1],header=['k [h Mpc^-1]','P XX ['+csv_units+']','P YY ['+csv_units+']','xerrhigh [h Mpc^-1]',$
       'xerrlow [h Mpc^-1]','thermal P XX ['+csv_units+']','thermal P YY ['+csv_units+']']
-
-
-    ;output = output_dir + 'plots_'+outputstring+'_1D'
+    print, 'Output file located here: ' + csv_name
 
     ;fix error bars to edge of graph window for aesthetics
     xerrhi_plot = xerrhi
