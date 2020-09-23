@@ -700,7 +700,7 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
     ;ktot_bins = (dindgen(Netaa+1)/float(Netaa))^3.*kmax+0.05
     ;ktot_bins = (dindgen(Netaa+1)/float(Netaa))^1.55*kmax+0.03
 
-    bin_scheme='default'
+    bin_scheme='_default'
     ktot_bins = (dindgen(Netaa+1)/float(Netaa))^1.4*kmax+low_k_bin_1D
     ;ktot_bins = findgen(Netaa+1)*0.0288 + low_k_bin_1D     ; nichole settings
     noise_obs_xx = sqrt(weights)
