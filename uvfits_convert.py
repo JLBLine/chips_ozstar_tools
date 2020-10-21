@@ -57,7 +57,8 @@ def main():
     
     if args.fhd_epp_format:
         out = rts_vis_to_fhd_format(specific_dir=args.specific_dir, obsfile_name=args.obsfile_name,
-                                    coarse_bands=args.coarse_bands, dry_run=args.dry_run)
+                                    sub_dir=args.sub_dir, coarse_bands=args.coarse_bands, 
+                                    dry_run=args.dry_run)
 
 #********************************
 
@@ -258,7 +259,7 @@ def update_header(specific_dir=None, obs_id=None, coarse_i=None, field_center_ra
 # Turn RTS uvfits per coarse band outputs into FHD compatible full uvfits
 # Example call:
 # python uvfits_covert.py --fhd_epp_format --specific_dir=/path/to/RTS/dir --sub_dir=my_time_stamp --obsfile_name=~/obs.txt
-def rts_vis_to_fhd_format(specific_dir=None, obsfile_name=None, coarse_bands=None, dry_run=None):
+def rts_vis_to_fhd_format(specific_dir=None, obsfile_name=None, sub_dir=None, coarse_bands=None, dry_run=None):
     from pyuvdata import UVData
 
     # Get obsids to download
@@ -271,20 +272,21 @@ def rts_vis_to_fhd_format(specific_dir=None, obsfile_name=None, coarse_bands=Non
     #cleanup = 1
 
     for obs_id in obsids:
-        if not os.path.exists(specific_dir + '/' + obs_id):
+        if not os.path.exists(specific_dir + '/' + obs_id + '/' + sub_dir):
+            print('Directory ' + specific_dir + '/' + obs_id + '/' + sub_dir + ' does not exist')
             print('Download/create uvdump files for ' + str(obs_id) + ' first')
             continue
-        else: 
-            dir_obs = specific_dir + '/' + obs_id + '/'
-    
+        else:
+            dir_obs = specific_dir + '/' + obs_id + '/' + sub_dir + '/'
+
         if os.path.exists(dir_obs + obs_id + '.uvfits'):
             print('uvfits already exists for ' + obs_id)
             continue
 
         if not os.path.exists(dir_obs + 'uvdump_01.uvfits'):
             print('Download/create uvdump files for ' + str(obs_id) + ' first using uvdump naming convention.')
-            continue        
-    
+            continue
+
         if dry_run:
             continue
 
@@ -313,7 +315,7 @@ def rts_vis_to_fhd_format(specific_dir=None, obsfile_name=None, coarse_bands=Non
 
         print("Writing " + dir_obs + obs_id + ".uvfits")
         UV_total.write_uvfits(dir_obs + obs_id + '.uvfits', spoof_nonessential=True)
-        
+
         #if cleanup:
         #    files = os.listdir(dir_obs)
         #    for file_i in files:
