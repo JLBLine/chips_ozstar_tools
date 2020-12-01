@@ -437,7 +437,7 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
 
   normalisation_power = normalisation * stokes_I_factor / den_corr * vis_weights_norm^2 
   normalisation_weights = normalisation * stokes_I_factor / weights_factor * Tsys_correction $
-    / vis_weights_norm / sqrt(Nchan)
+    / vis_weights_norm / sqrt(Nchan) / den_corr
 
   ;for I=xx+yy
   expected_noise = 2*boltz*Tsys*1.e26/D^2/sqrt(bw/Nchan*deltat)   ; Jy
