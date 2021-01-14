@@ -129,36 +129,38 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   ;*****
 
   ;***** General obs/integration details
-  if ( ~keyword_set(band) and ~keyword_set(base_freq) ) then band = 'high'
-
-  if ( keyword_set(band) and ~keyword_set(base_freq) ) then begin
-    if (band NE 'high') AND (band NE 'low') AND (band NE 'ultra-low') then $
-      message, "Band name not recognized. Options are high, low, and ultra-low. Please use base_freq instead."
-    print, 'Frequency band is ' + band + ' (Default: high)'
-  endif
-
-  if ( ~keyword_set(band) and keyword_set(base_freq) ) then print, 'Base frequency is ' + strtrim(base_freq,2) + ' Hz'
-
   if ~keyword_set(chan_width) then chan_width = 80.e3
   print, 'Frequency channel resolution is ' + strtrim(chan_width,2) + ' Hz (Default: 80000 Hz)'
-  ;*****
 
-  ;***** Freq-dependent parameters
-  if keyword_set(band) then begin
+  if ~keyword_set(band) then begin
+    band = 'high'
+  endif else begin
+    if (band NE 'high') AND (band NE 'low') AND (band NE 'ultra-low') then $
+      message, "Band name not recognized. Options are high, low, and ultra-low."
+  endelse
+  print, 'Frequency band is ' + band + ' (Default: high)'
+  
+  if ( keyword_set(band) and keyword_set(base_freq) ) then $
+    print, 'Setting base_freq supersedes the default base frequency of the band'
+
+  if keyword_set(band) and ~keyword_set(base_freq) then begin
     case band of
       'high': if keyword_set(FHD) then base_freq = 167.075e6 else if keyword_set(RTS) then base_freq = 167.035e6
       'low': if keyword_set(FHD) then base_freq = 138.915e6 else if keyword_set(RTS) then base_freq = 138.875e6
       'ultra-low': if keyword_set(FHD) then base_freq = 75.92e6 else if keyword_set(RTS) then base_freq = 75.52e6
     endcase
   endif
+  print, 'Base frequency is ' + strtrim(base_freq,2) + ' Hz'
   ;*****
 
   ;***** Beam volume calculation
   if ~keyword_set(obs_volume_file) then begin
     ;Low band is calculated with the high band beam in CHIPS since there is little beam-shape change
     if band EQ 'low' then band_temp = 'high' else band_temp = band
-    beamxx = read_csv('observation_volumes/'+band_temp+'_band_instrumental_xx.csv',N_TABLE_HEADER=2)
-  endif else beamxx = read_csv(obs_volume_file,N_TABLE_HEADER=2)
+    obs_volume_file='observation_volumes/'+band_temp+'_band_BH.csv'
+  endif 
+  beamxx = read_csv(obs_volume_file,N_TABLE_HEADER=2)
+  print, 'Beam volume file is ' + obs_volume_file + ' (Default: chips_2019 Blackman-Harris beam)'
   ;Extract the observation volume from file. Ordered as pointing, w-stack index, and obs volume. 
   ;EoR observations are assumed to have a w-stack index of 0
   beam_point_wstack = FLTARR(3,N_elements(beamxx.field1))
@@ -222,9 +224,14 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
   ;From Wyithe & Morales 2007, temperature is dominated by foregrounds in low-freq radio
   ;sqrt(2) factor for single pol
   Tsys = 280. * ((1+z)/7.5)^2.3 / sqrt(2.)
-  print, 'Expected Tsys is ' + strtrim(Tsys,2)
+  print, 'Expected Tsys is ' + strtrim(Tsys,2) + ' for a single pol, ' + $ 
+    strtrim(Tsys*sqrt(2.),2) + ' for Stokes I'
   if keyword_set(set_tsys) then begin
-    if set_tsys GT 1 then Tsys = set_tsys
+    if set_tsys GT 1 then begin
+      ;Tsys was applied to single pol weights for FHD, and for Stokes I pol weights for RTS in CHIPS
+      if keyword_set(FHD) then Tsys = set_tsys
+      if keyword_set(RTS) then Tsys = set_tsys * sqrt(2.) 
+    endif else if keyword_set(RTS) then Tsys = Tsys * sqrt(2.)
   endif
   ;*****
 
@@ -725,11 +732,16 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
     ;bin_scheme = '_eppfullband'
     ;ktot_bins = (dindgen(Netaa+1))*(0.0090336605*2)
     ;ktot_bins = ktot_bins - ktot_bins[1]/2
-    
+   
+    ;; Binning scheme to replicate Barry et al 2019b z=7 output
+    ;bin_scheme = '_eppred7band'
+    ;ktot_bins = (dindgen(Netaa+1))*(0.029040439)
+    ;ktot_bins = ktot_bins - ktot_bins[1]/2
+ 
     ;; Binning scheme in Li et al. 2019 and Rahimi et al. 2021
     ;bin_scheme = '_binMahsa'
     ;ktot_bins = findgen(Netaa+1)*1.7163922/float(97./4.) * hubble_param
-
+    
     noise_obs_xx = sqrt(weights)
     noise_obs_yy = sqrt(weights_2)
 
@@ -810,14 +822,15 @@ pro plot_chipsout_general, output_tag, initials=initials, FHD=FHD, RTS=RTS, oneD
       else kperp_name= '_kperp'+number_formatter(kperp_min_1D)+'-'+number_formatter(kperp_max_1D)
     kpar_name = '_kpar'+number_formatter(kpar_min_1D)+'-'+number_formatter(kpar_max_1D)
     freq_name = '_nfreq' + number_formatter(n_freq)
+    lssa_name = '_lssa' + number_formatter(lssa_num)
 
-    output = output + freq_name + bin_scheme + tsys_name + wedge_name + kperp_name + kpar_name + '.ps'
+    output = output + freq_name + lssa_name + bin_scheme + tsys_name + wedge_name + kperp_name + kpar_name + '.ps'
     cgPS_Open,output,/nomatch
 
     bin_start=1
 
     ;Write CSV file with all 1d binned values
-    csv_name = output_dir + '1D_values_' + note + freq_name + bin_scheme + tsys_name + wedge_name + kperp_name + kpar_name + '.csv'
+    csv_name = output_dir + '1D_values_' + note + freq_name + lssa_name + bin_scheme + tsys_name + wedge_name + kperp_name + kpar_name + '.csv'
     WRITE_CSV, csv_name, ktot_bins[bin_start:Netaa-1], pmeas_xx[bin_start:Netaa-1],$
       pmeas_yy[bin_start:Netaa-1],xerrhi[bin_start:Netaa-1],xerrlo[bin_start:Netaa-1],ptot_xx[bin_start:Netaa-1],$
       ptot_yy[bin_start:Netaa-1],header=['k [h Mpc^-1]','P XX ['+csv_units+']','P YY ['+csv_units+']','xerrhigh [h Mpc^-1]',$
