@@ -86,14 +86,25 @@ General options:
 * chan_width: Enter the frequency resolution in Hz, defaults to 80e3.   
 * lssa_num: Specify whether kriging has been performed on the input (0: kriging applied, 1: kriging not applied, defaults to 0).   
 * band_point_weight: An array of 9 integers to indicate what pointings, from -4 to 4, were used. Default is just zenith. For example, if pointings -2 to 2 were used, then band_point_weight = [0,0,1,1,1,1,1,0,0].  
+* obs_volume_file: Optional observational volume csv file. Defaults to corresponding obs volume file in observation_volumes
+* set_tsys: Either set the tsys directly (i.e. set_tsys=200.) or set to 1 to scale the tsys to an updated theoretical number. For devel purposes and pipeline comparison only. Default: 0
 
 1D cutting options:    
 * wedge_cut: 0 = no cut, 3.0 = horizon. Default is 0.   
 * wedge_angle: Alternatevely, provide sky angle in degrees to cut. Will overwrite wedge_cut keyword. 103.7 is the horizon, 120 is buffer in Beardsley et al. 2016 and Barry et al. 2019b 
-* kperp_min_1D: Minimun k perpendicular in lambda. Default 10 wavelengths 
-* kperp_max_1D: Maximum k perpendicular in lambda. Default 50 wavelengths 
+* kperp_min_1D_lambda: Minimum k perpendicular in lambda. Default 10 wavelengths
+* kperp_max_1D_lambda: Maximum k perpendicular in lambda. Default 50 wavelengths
+* kperp_min_1D_Mpc: Minimum k perpendicular in Mpc^-1. Default is unset. Supercedes kperp_min_1D_lambda if set.
+* kperp_max_1D_Mpc: Maximum k perpendicular in Mpc^-1. Default is unset. Supercedes kperp_max_1D_lambda if set.
 * kpar_min_1D: Minimum k parallel in inverse Mpc. Default 0 Mpc^-1. Value of 0.105 Mpc^-1 used in Beardsley et al. 2016 and Barry et al. 2019b   
-* kpar_max_1D: Maximum k parallel in inverse Moc. Default is 10 Mpc^-1    
+* kpar_max_1D: Maximum k parallel in inverse Mpc. Default is 10 Mpc^-1    
+
+Plotting options:
+* plot_max_1D: 1D plot maximum range. Default is 10^11 (units are either mK^2 (mK_units=1) or mK^2 h^-3 Mpc^3 (mK_units=0))
+* plot_min_1D: 1D plot minimum range. Default is 10^3 (units are either mK^2 (mK_units=1) or mK^2 h^-3 Mpc^3 (mK_units=0))
+* plot_max_2D: 2D plot maximum range. Default is 10^15 mK^2 h^-3 Mpc^3
+* plot_min_2D: 2D plot minimum range. Default is 10^3 mK^2 h^-3 Mpc^3
+* mK_units: 1D plots in mK^2 units. Default is 1.
 
 Input and output options:    
 * output_dir: Output directory for plots. Defaults to your home directory.
