@@ -48,6 +48,8 @@ where `list_test.txt` contains obs ID numbers. `--no_clean` means the clean scri
 
 ## plot_chipsout_general.pro  
 
+### **This script has been moved to the chips repo because it corrects for various normalisations and should be tied to the version of chips
+
 This is an IDL script to perform the final binning, masking, and normalizations for CHIPS outputs given either FHD or RTS inputs. Diagnostic plots are also made.
 
 Various libraries are required. Please see the the [dependencies](https://github.com/EoRImaging/eppsilon#dependencies) of eppsilon if a local installation is desired. Otherwise, add these paths to your `IDL_PATH` to your environment:
